@@ -8,6 +8,7 @@ body.dark-theme {
 .dark-theme .card {
     background-color: #333;
     border-color: #444;
+    color: #e4e4e4;
 }
 
 .dark-theme .card-header,
@@ -137,9 +138,7 @@ body.dark-theme {
 }
 
 /* Liens */
-.dark-theme a {
-    color: #5ea3e4;
-}
+
 
 .dark-theme a:hover {
     color: #7db7f3;
@@ -224,8 +223,8 @@ body.dark-theme {
 .theme-switch {
     position: relative;
     display: inline-block;
-    width: 60px;
-    height: 34px;
+    width: 47px;
+    height: 23px;
 }
 
 .theme-switch input {
@@ -250,23 +249,17 @@ body.dark-theme {
 .slider:before {
     position: absolute;
     content: "";
-    height: 26px;
-    width: 26px;
-    left: 4px;
-    bottom: 4px;
+    height: 21px;
+    width: 21px;
+    left: 0px;
+    bottom: 1px;
     background-color: white;
     -webkit-transition: .4s;
     transition: .4s;
     border-radius: 50%;
 }
 
-input:checked + .slider {
-    background-color: #2196F3;
-}
 
-input:focus + .slider {
-    box-shadow: 0 0 1px #2196F3;
-}
 
 input:checked + .slider:before {
     -webkit-transform: translateX(26px);
@@ -278,8 +271,8 @@ input:checked + .slider:before {
 .slider:after {
     content: "☀️";
     position: absolute;
-    left: 8px;
-    bottom: 6px;
+    left: 2px;
+    bottom: 4px;
     color: #fff;
     font-size: 12px;
 }
@@ -287,5 +280,18 @@ input:checked + .slider:before {
 input:checked + .slider:after {
     content: "🌙";
     left: auto;
-    right: 8px;
+    right: 2px;
+}
+
+.dark-theme .slider:before {
+    background-color: black;
+
+}
+
+.dark-theme a {
+    color: #5ea3e4;
+}
+
+.dark-theme a.btn {
+    color: white;
 }
