@@ -115,6 +115,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
     }
 }
+
+// Action : Mettre à jour les dates
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_dates') {
+    $date_limite = trim($_POST['date_limite'] ?? '');
+    $date_recuperation = trim($_POST['date_recuperation'] ?? '');
+    
+    if (empty($date_limite) || empty($date_recuperation)) {
+        $errors[] = 'Les dates sont requises.';
+    } else {
+        if (updateCommandeDates($commande_id, $date_limite, $date_recuperation)) {
+            $success_message = 'Dates mises à jour avec succès.';
+            $commande_data = getCommandeData($commande_id); // Recharger les données
+            $date_limite = new DateTime($commande_data['date_limite']);
+            $date_recup = new DateTime($commande_data['date_recuperation']);
+        } else {
+            $errors[] = 'Erreur lors de la mise à jour des dates.';
+        }
+    }
+}
+
+// Action : Supprimer un produit
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_product') {
+    $produit_id = $_POST['produit_id'] ?? '';
+    
+    if (empty($produit_id)) {
+        $errors[] = 'ID du produit manquant.';
+    } else {
+        if (deleteProduit($commande_id, $produit_id)) {
+            $success_message = 'Produit supprimé avec succès.';
+            $commande_data = getCommandeData($commande_id); // Recharger les données
+        } else {
+            $errors[] = 'Erreur lors de la suppression du produit.';
+        }
+    }
+}
+
+// Action : Supprimer une variation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_variation') {
+    $produit_id = $_POST['produit_id'] ?? '';
+    $variation_id = $_POST['variation_id'] ?? '';
+    
+    if (empty($produit_id) || empty($variation_id)) {
+        $errors[] = 'ID du produit ou de la variation manquant.';
+    } else {
+        if (deleteVariation($commande_id, $produit_id, $variation_id)) {
+            $success_message = 'Variation supprimée avec succès.';
+            $commande_data = getCommandeData($commande_id); // Recharger les données
+        } else {
+            $errors[] = 'Erreur lors de la suppression de la variation.';
+        }
+    }
+}
+
+// Action : Dupliquer la commande
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'duplicate_order') {
+    $new_commande_id = duplicateCommande($commande_id, $user_id);
+    if ($new_commande_id) {
+        $_SESSION['flash_message'] = 'Commande dupliquée avec succès.';
+        $_SESSION['flash_type'] = 'success';
+        header('Location: admin_commande.php?id=' . $new_commande_id);
+        exit;
+    } else {
+        $errors[] = 'Erreur lors de la duplication de la commande.';
+    }
+}
+
+// Action : Exporter la commande en JSON
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'export_json') {
+    $json_data = exportCommandeJSON($commande_id);
+    if ($json_data) {
+        $filename = 'commande_' . $commande_id . '_' . date('Ymd_His') . '.json';
+        $file_path = 'data/exports/' . $filename;
+        
+        if (file_put_contents($file_path, $json_data)) {
+            header('Content-Type: application/json');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Length: ' . strlen($json_data));
+            echo $json_data;
+            exit;
+        } else {
+            $errors[] = 'Erreur lors de l\'enregistrement du fichier JSON.';
+        }
+    } else {
+        $errors[] = 'Erreur lors de l\'export de la commande.';
+    }
+}
+
+// Action : Générer un PDF
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'generate_pdf') {
+    $pdf_path = generateCommandePDF($commande_id);
+    if ($pdf_path) {
+        $filename = basename($pdf_path);
+        header('Content-Type: text/html');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        readfile($pdf_path);
+        exit;
+    } else {
+        $errors[] = 'Erreur lors de la génération du PDF.';
+    }
+}
+
+// Action : Mettre à jour la description
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_description') {
+    $description = trim($_POST['description'] ?? '');
+    
+    if (updateCommandeDescription($commande_id, $description)) {
+        $success_message = 'Description mise à jour avec succès.';
+        $commande_data = getCommandeData($commande_id); // Recharger les données
+    } else {
+        $errors[] = 'Erreur lors de la mise à jour de la description.';
+    }
+}
+
+// Action : Mettre à jour le statut public
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_public_status') {
+    $is_public = isset($_POST['is_public']) && $_POST['is_public'] === '1';
+    
+    if (updateCommandePublicStatus($commande_id, $is_public)) {
+        $success_message = 'Statut public mis à jour avec succès.';
+        $commande_data = getCommandeData($commande_id); // Recharger les données
+    } else {
+        $errors[] = 'Erreur lors de la mise à jour du statut public.';
+    }
+}
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -157,6 +281,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <span class="<?php echo $is_closed ? '' : 'date-limite'; ?>">
                         <?php echo $date_limite->format('d/m/Y H:i'); ?>
                     </span>
+                    <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#updateDatesModal">
+                        <i class="fas fa-edit"></i> Modifier
+                    </button>
                 </div>
                 <div class="mb-3">
                     <strong>Récupération:</strong> 
@@ -187,19 +314,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <button class="btn btn-outline-secondary" type="button" onclick="copyShareLink()">Copier</button>
                     </div>
                 </div>
+                
+                <div class="mb-3">
+                    <strong>Description:</strong>
+                    <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#updateDescriptionModal">
+                        <i class="fas fa-edit"></i> <?php echo isset($commande_data['description']) && !empty($commande_data['description']) ? 'Modifier' : 'Ajouter'; ?>
+                    </button>
+                    <?php if (isset($commande_data['description']) && !empty($commande_data['description'])): ?>
+                    <div class="mt-2 p-2 bg-light rounded">
+                        <?php echo nl2br(htmlspecialchars($commande_data['description'])); ?>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Visibilité:</strong>
+                    <form method="post" action="" class="d-inline ms-2">
+                        <input type="hidden" name="action" value="update_public_status">
+                        <input type="hidden" name="is_public" value="<?php echo isset($commande_data['public']) && $commande_data['public'] ? '0' : '1'; ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-<?php echo isset($commande_data['public']) && $commande_data['public'] ? 'warning' : 'success'; ?>">
+                            <i class="fas fa-<?php echo isset($commande_data['public']) && $commande_data['public'] ? 'eye-slash' : 'eye'; ?>"></i>
+                            <?php echo isset($commande_data['public']) && $commande_data['public'] ? 'Rendre privée' : 'Rendre publique'; ?>
+                        </button>
+                    </form>
+                    <div class="mt-1">
+                        <small class="text-muted">
+                            <?php echo isset($commande_data['public']) && $commande_data['public'] 
+                                ? 'Cette commande est visible par tous les utilisateurs sur le tableau de bord.' 
+                                : 'Cette commande n\'est visible que par les participants.'; ?>
+                        </small>
+                    </div>
+                </div>
+                
                 <hr>
-                <form method="post" action="" class="mb-2">
-                    <input type="hidden" name="action" value="send_reminder">
-                    <button type="submit" class="btn btn-warning w-100" <?php echo $is_closed ? 'disabled' : ''; ?>>
-                        Envoyer un rappel
-                    </button>
-                </form>
-                <form method="post" action="">
-                    <input type="hidden" name="action" value="send_pickup">
-                    <button type="submit" class="btn btn-info w-100">
-                        Envoyer les infos de récupération
-                    </button>
-                </form>
+                
+                <div class="d-grid gap-2">
+                    <form method="post" action="" class="mb-2">
+                        <input type="hidden" name="action" value="send_reminder">
+                        <button type="submit" class="btn btn-warning w-100" <?php echo $is_closed ? 'disabled' : ''; ?>>
+                            <i class="fas fa-bell"></i> Envoyer un rappel
+                        </button>
+                    </form>
+                    
+                    <form method="post" action="" class="mb-2">
+                        <input type="hidden" name="action" value="send_pickup">
+                        <button type="submit" class="btn btn-info w-100">
+                            <i class="fas fa-truck"></i> Envoyer les infos de récupération
+                        </button>
+                    </form>
+                    
+                    <form method="post" action="" class="mb-2">
+                        <input type="hidden" name="action" value="generate_pdf">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-file-pdf"></i> Exporter en PDF
+                        </button>
+                    </form>
+                    
+                    <div class="btn-group mb-2">
+                        <form method="post" action="" class="w-50">
+                            <input type="hidden" name="action" value="export_json">
+                            <button type="submit" class="btn btn-secondary w-100">
+                                <i class="fas fa-file-code"></i> Exporter JSON
+                            </button>
+                        </form>
+                        <form method="post" action="" class="w-50">
+                            <input type="hidden" name="action" value="duplicate_order">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-copy"></i> Dupliquer
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -340,14 +525,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <?php foreach ($commande_data['produits'] as $produit): ?>
                     <div class="col-md-6 mb-4">
                         <div class="product-item">
-                            <h5>
-                                <?php echo htmlspecialchars($produit['nom']); ?>
-                                <?php if (!empty($produit['url'])): ?>
-                                <a href="<?php echo htmlspecialchars($produit['url']); ?>" target="_blank" class="product-link ms-2" data-bs-toggle="tooltip" title="Plus d'informations">
-                                    <small><i class="fas fa-info-circle"></i> Info</small>
-                                </a>
-                                <?php endif; ?>
-                            </h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5>
+                                    <?php echo htmlspecialchars($produit['nom']); ?>
+                                    <?php if (!empty($produit['url'])): ?>
+                                    <a href="<?php echo htmlspecialchars($produit['url']); ?>" target="_blank" class="product-link ms-2" data-bs-toggle="tooltip" title="Plus d'informations">
+                                        <small><i class="fas fa-info-circle"></i> Info</small>
+                                    </a>
+                                    <?php endif; ?>
+                                </h5>
+                                <form method="post" action="" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
+                                    <input type="hidden" name="action" value="delete_product">
+                                    <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
+                                    <button type="submit" class="btn btn-sm btn-danger" <?php echo $is_closed ? 'disabled' : ''; ?>>
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                             <div class="table-responsive">
                                 <table class="table table-sm">
                                     <thead>
@@ -355,6 +549,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                             <th>Variation</th>
                                             <th>Poids</th>
                                             <th>Prix</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -363,6 +558,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                             <td><?php echo htmlspecialchars($variation['nom']); ?></td>
                                             <td><?php echo number_format($variation['poids'], 2, ',', ' '); ?> kg</td>
                                             <td><?php echo number_format($variation['prix'], 2, ',', ' '); ?> €</td>
+                                            <td>
+                                                <form method="post" action="" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette variation ?');">
+                                                    <input type="hidden" name="action" value="delete_variation">
+                                                    <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
+                                                    <input type="hidden" name="variation_id" value="<?php echo $variation['id']; ?>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" <?php echo $is_closed ? 'disabled' : ''; ?>>
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
                                         </tr>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -510,6 +715,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour modifier les dates -->
+<div class="modal fade" id="updateDatesModal" tabindex="-1" aria-labelledby="updateDatesModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="">
+                <input type="hidden" name="action" value="update_dates">
+                
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateDatesModalLabel">Modifier les dates</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="date_limite" class="form-label required-field">Date limite</label>
+                        <input type="datetime-local" class="form-control" id="date_limite" name="date_limite" 
+                               value="<?php echo $date_limite->format('Y-m-d\TH:i'); ?>" required>
+                        <small class="form-text text-muted">Date limite pour passer commande</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="date_recuperation" class="form-label required-field">Date de récupération</label>
+                        <input type="datetime-local" class="form-control" id="date_recuperation" name="date_recuperation" 
+                               value="<?php echo $date_recup->format('Y-m-d\TH:i'); ?>" required>
+                        <small class="form-text text-muted">Date de récupération des produits</small>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour modifier la description -->
+<div class="modal fade" id="updateDescriptionModal" tabindex="-1" aria-labelledby="updateDescriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="">
+                <input type="hidden" name="action" value="update_description">
+                
+                <div class="modal-header">
+                    <h5 class="modal-title" id="updateDescriptionModalLabel">Description de la commande</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="5"><?php echo isset($commande_data['description']) ? htmlspecialchars($commande_data['description']) : ''; ?></textarea>
+                        <small class="form-text text-muted">Informations supplémentaires sur la commande</small>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
                 </div>
             </form>
         </div>

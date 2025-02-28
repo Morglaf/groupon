@@ -6,7 +6,8 @@
     "password_hash": "$2y$10$V4EGN3WSOoKwzJ1B98bny..y0ZVMK.0xaJ3tjjvj2MUv\/f1fZ8woW",
     "date_inscription": "2025-02-27T12:00:44",
     "commandes_admin": [
-        "358cc7ea256b9d2668092a9e87cd4b2d"
+        "358cc7ea256b9d2668092a9e87cd4b2d",
+        "caa4e165b894fa78e7cff6b494bd155c"
     ],
     "commandes_participant": [],
     "historique_commandes": []

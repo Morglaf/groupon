@@ -55,18 +55,6 @@ Ce projet est une plateforme de gestion de commandes inspirée de Groupon, perme
 - [x] Interface d'administration
 - [x] Support multilingue initial
 
-- fix mode sombre : tableau en blanc
-- possibilité d'annuler /reporter  Date limite et/ou Récupération:
-- verifier fonctionnement mail
-- integrer turnstile !
-- possibilité de supprimer/produit et/ou variations
-- possibilité de dupliquer/exporter en json une commande
-- possibilité de faire un export pdf de la commande pour la distribution (qui a commandé quoi et doit quoi)
-- possibilité de faire une description de la commande
-- possibilité de mettre la commande en public sur les dashboard de tout les inscrits
-- traduire la paga d'accueil
-
-
 ### Phase 2 - Q2 2025
 - [ ] Amélioration de l'interface utilisateur
 - [ ] Système de notifications

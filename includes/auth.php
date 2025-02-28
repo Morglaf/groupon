@@ -45,11 +45,19 @@ function loginUser($user_data) {
  * Déconnecte l'utilisateur
  */
 function logoutUser() {
-    unset($_SESSION['user_id']);
-    unset($_SESSION['user_name']);
-    unset($_SESSION['user_email']);
+    // Sauvegarder les préférences utilisateur
+    $theme = $_SESSION['theme'] ?? 'light';
+    $lang = $_SESSION['lang'] ?? DEFAULT_LANG;
     
-    session_destroy();
+    // Nettoyer la session
+    $_SESSION = array();
+    
+    // Restaurer les préférences
+    $_SESSION['theme'] = $theme;
+    $_SESSION['lang'] = $lang;
+    
+    // Ne pas détruire complètement la session pour conserver les préférences
+    // session_destroy();
 }
 
 /**

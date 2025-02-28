@@ -30,6 +30,14 @@ if (!empty($user_data['commandes_participant'])) {
     }
 }
 
+// Récupérer les commandes publiques
+$commandes_publiques = getPublicCommandes();
+// Filtrer pour ne pas afficher les commandes où l'utilisateur est déjà admin ou participant
+$commandes_publiques = array_filter($commandes_publiques, function($commande) use ($user_id) {
+    return $commande['admin_id'] !== $user_id && 
+           (!isset($commande['participants'][$user_id]) || empty($commande['participants'][$user_id]));
+});
+
 // Trier les commandes par date de création (plus récente en premier)
 usort($commandes_admin, function($a, $b) {
     return strtotime($b['date_creation']) - strtotime($a['date_creation']);
@@ -60,7 +68,14 @@ usort($commandes_participant, function($a, $b) {
 <div class="row mb-4">
     <div class="col-md-12 d-flex justify-content-between align-items-center">
         <h2>Mes commandes créées</h2>
-        <a href="/create_commande.php" class="btn btn-primary">Créer une commande</a>
+        <div>
+            <a href="/import_commande.php" class="btn btn-outline-primary me-2">
+                <i class="fas fa-file-import"></i> Importer une commande
+            </a>
+            <a href="/create_commande.php" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Créer une commande
+            </a>
+        </div>
     </div>
 </div>
 
@@ -196,6 +211,71 @@ usort($commandes_participant, function($a, $b) {
             </div>
             <div class="card-footer text-muted">
                 Créée le <?php echo (new DateTime($commande['date_creation']))->format('d/m/Y'); ?>
+            </div>
+        </div>
+    </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<!-- Commandes publiques -->
+<?php if (!empty($commandes_publiques)): ?>
+<div class="row mb-4 mt-5">
+    <div class="col-md-12">
+        <h2>Commandes publiques</h2>
+        <p class="text-muted">Ces commandes sont ouvertes à tous les utilisateurs.</p>
+    </div>
+</div>
+
+<div class="row">
+    <?php foreach ($commandes_publiques as $commande): ?>
+    <?php
+    $is_closed = isCommandeClosed($commande);
+    $date_limite = new DateTime($commande['date_limite']);
+    $date_recup = new DateTime($commande['date_recuperation']);
+    ?>
+    <div class="col-md-6 mb-4">
+        <div class="card commande-card <?php echo $is_closed ? 'commande-closed' : ''; ?>">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><?php echo htmlspecialchars($commande['titre']); ?></h5>
+                <span class="badge bg-<?php echo $is_closed ? 'secondary' : 'success'; ?>">
+                    <?php echo $is_closed ? 'Fermée' : 'Ouverte'; ?>
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Date limite:</strong> 
+                    <span class="<?php echo $is_closed ? '' : 'date-limite'; ?>">
+                        <?php echo $date_limite->format('d/m/Y H:i'); ?>
+                    </span>
+                </div>
+                <div class="mb-3">
+                    <strong>Récupération:</strong> 
+                    <?php echo $date_recup->format('d/m/Y H:i'); ?>
+                    <br>
+                    <small><?php echo htmlspecialchars($commande['adresse_recuperation']); ?></small>
+                </div>
+                <div class="mb-3">
+                    <strong>Organisateur:</strong> 
+                    <?php 
+                    $admin_data = getUserData($commande['admin_id']);
+                    echo $admin_data ? htmlspecialchars($admin_data['prenom'] . ' ' . $admin_data['nom']) : 'Administrateur';
+                    ?>
+                </div>
+                <?php if (isset($commande['description']) && !empty($commande['description'])): ?>
+                <div class="mb-3">
+                    <strong>Description:</strong>
+                    <div class="mt-2 p-2 bg-light rounded">
+                        <?php echo nl2br(htmlspecialchars(substr($commande['description'], 0, 150))); ?>
+                        <?php if (strlen($commande['description']) > 150): ?>...<?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <div class="d-grid">
+                    <a href="/commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-primary">
+                        Voir la commande
+                    </a>
+                </div>
             </div>
         </div>
     </div>

@@ -48,18 +48,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = __('required_field');
     } elseif (!isValidEmail($form_data['email'])) {
         $errors[] = __('invalid_email');
-    } elseif (emailExists($form_data['email'])) {
-        $errors[] = __('email_exists');
+    } elseif (userExists($form_data['email'])) {
+        $errors[] = __('email_already_exists');
     }
     
     if (empty($password)) {
         $errors[] = __('required_field');
     } elseif (strlen($password) < 8) {
-        $errors[] = __('min_8_chars');
+        $errors[] = __('password_too_short');
     }
     
     if ($password !== $password_confirm) {
-        $errors[] = __('passwords_not_match');
+        $errors[] = __('passwords_dont_match');
+    }
+    
+    // Vérification Turnstile si activé
+    if (USE_TURNSTILE) {
+        $turnstile_token = $_POST['cf-turnstile-response'] ?? '';
+        if (!verifyTurnstile($turnstile_token)) {
+            $errors[] = 'Vérification anti-robot échouée. Veuillez réessayer.';
+        }
     }
     
     // Création du compte
@@ -129,6 +137,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="password_confirm" class="form-label required-field"><?php echo __('confirm_password'); ?></label>
                         <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
                     </div>
+                    
+                    <?php if (USE_TURNSTILE): ?>
+                    <div class="mb-3">
+                        <div class="cf-turnstile" data-sitekey="<?php echo TURNSTILE_SITE_KEY; ?>" data-theme="light"></div>
+                        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                    </div>
+                    <?php endif; ?>
                     
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary"><?php echo __('sign_up'); ?></button>

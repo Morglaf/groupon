@@ -154,6 +154,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <br>
                     <small><?php echo htmlspecialchars($commande_data['adresse_recuperation']); ?></small>
                 </div>
+                
+                <?php if (isset($commande_data['description']) && !empty($commande_data['description'])): ?>
+                <div class="mb-3">
+                    <strong>Description:</strong>
+                    <div class="mt-2 p-2 bg-light rounded">
+                        <?php echo nl2br(htmlspecialchars($commande_data['description'])); ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
                 <div class="mb-3">
                     <strong>Type de commande:</strong> 
                     <?php 

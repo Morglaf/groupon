@@ -25,6 +25,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Le mot de passe est requis.';
     }
     
+    // Vérification Turnstile si activé
+    if (USE_TURNSTILE) {
+        $turnstile_token = $_POST['cf-turnstile-response'] ?? '';
+        if (!verifyTurnstile($turnstile_token)) {
+            $errors[] = 'Vérification anti-robot échouée. Veuillez réessayer.';
+        }
+    }
+    
     // Authentification
     if (empty($errors)) {
         $user_data = authenticateUser($email, $password);
@@ -74,6 +82,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label for="password" class="form-label">Mot de passe</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
+                    
+                    <?php if (USE_TURNSTILE): ?>
+                    <div class="mb-3">
+                        <div class="cf-turnstile" data-sitekey="<?php echo TURNSTILE_SITE_KEY; ?>" data-theme="light"></div>
+                        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+                    </div>
+                    <?php endif; ?>
                     
                     <?php if (isset($_GET['redirect'])): ?>
                     <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($_GET['redirect']); ?>">
