@@ -6,6 +6,7 @@
 - [Technologies utilisées](#technologies-utilisées)
 - [Installation](#installation)
 - [Configuration](#configuration)
+- [Tests et vérification](#tests-et-vérification)
 - [Roadmap](#roadmap)
 - [Contribution](#contribution)
 
@@ -23,29 +24,51 @@ Ce projet est une plateforme de gestion de commandes inspirée de Groupon, perme
 
 ## Technologies utilisées
 - PHP
-- MySQL
 - JavaScript
 - HTML5/CSS3
 - API REST
 - Bootstrap
+- Stockage de données en JSON
 
 ## Installation
 1. Clonez le dépôt
 2. Configurez votre serveur web (Apache/Nginx)
-3. Importez la base de données
-4. Configurez les paramètres de connexion dans `includes/config.php`
-5. Lancez l'application
+3. Configurez les paramètres dans `includes/config.php`
+4. Lancez l'application
 
 ## Configuration
 ### Prérequis
 - PHP 7.4 ou supérieur
-- MySQL 5.7 ou supérieur
 - Serveur web (Apache/Nginx)
 
-### Configuration de la base de données
-1. Créez une base de données MySQL
-2. Importez le schéma depuis `data/schema.sql`
-3. Configurez les accès dans le fichier de configuration
+### Configuration du stockage de données
+1. Assurez-vous que les dossiers `data/users`, `data/commandes` et `data/exports` existent et sont accessibles en écriture
+2. Aucune base de données SQL n'est nécessaire, toutes les données sont stockées dans des fichiers JSON
+
+Pour plus de détails sur la configuration, consultez le [guide de configuration détaillé](CONFIGURATION.md).
+
+## Tests et vérification
+
+L'application inclut des scripts de test pour vérifier que les fonctionnalités critiques sont correctement configurées :
+
+### Test de Cloudflare Turnstile
+
+Pour vérifier si la protection anti-robot Turnstile est correctement configurée :
+
+1. Configurez Turnstile dans `includes/config.php` selon les instructions du [guide de configuration](CONFIGURATION.md#configuration-de-cloudflare-turnstile)
+2. Accédez à `http://votre-site/test_turnstile.php`
+3. Suivez les instructions à l'écran pour tester la fonctionnalité
+
+### Test de la configuration SMTP
+
+Pour vérifier si l'envoi d'emails est correctement configuré :
+
+1. Configurez les paramètres SMTP dans `includes/config.php` selon les instructions du [guide de configuration](CONFIGURATION.md#configuration-smtp-pour-lenvoi-demails)
+2. Modifiez `test_email.php` pour y indiquer votre adresse email
+3. Accédez à `http://votre-site/test_email.php`
+4. Le script tentera d'envoyer un email de test et affichera le résultat
+
+> **Note de sécurité** : Une fois les tests effectués, il est recommandé de supprimer ou de restreindre l'accès à ces fichiers de test.
 
 ## Roadmap
 
