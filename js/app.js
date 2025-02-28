@@ -163,6 +163,24 @@ function toggleTheme() {
     }
 }
 
+// Fonction pour initialiser le thème
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const themeSwitch = document.getElementById('theme-switch');
+    
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (themeSwitch) {
+            themeSwitch.checked = true;
+        }
+    }
+    
+    // Ajouter l'écouteur d'événement pour le switch de thème
+    if (themeSwitch) {
+        themeSwitch.addEventListener('change', toggleTheme);
+    }
+}
+
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
     // Initialiser les tooltips
@@ -181,20 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Initialiser le thème
-    const savedTheme = localStorage.getItem('theme');
-    const themeSwitch = document.getElementById('theme-switch');
-    
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        if (themeSwitch) {
-            themeSwitch.checked = true;
-        }
-    }
-    
-    // Ajouter l'écouteur d'événement pour le switch de thème
-    if (themeSwitch) {
-        themeSwitch.addEventListener('change', toggleTheme);
-    }
+    initTheme();
     
     // Écouteur pour les liens de produits (ouvrir dans une nouvelle fenêtre)
     const productLinks = document.querySelectorAll('.product-link');
@@ -228,3 +233,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// S'assurer que le thème est initialisé même si le DOM est déjà chargé
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    initTheme();
+}
