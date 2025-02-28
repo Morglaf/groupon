@@ -3,14 +3,14 @@ require_once 'includes/header.php';
 
 // Vérifier si l'utilisateur est connecté
 if (!isLoggedIn()) {
-    $_SESSION['flash_message'] = 'Vous devez être connecté pour importer une commande.';
+    $_SESSION['flash_message'] = __('must_login_to_import');
     $_SESSION['flash_type'] = 'warning';
     header('Location: login.php?redirect=' . urlencode('import_commande.php'));
     exit;
 }
 
 $user_id = getCurrentUserId();
-$page_title = "Importer une commande";
+$page_title = __('import_order');
 
 $errors = [];
 $success_message = null;
@@ -19,24 +19,24 @@ $success_message = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'import') {
     // Vérifier si un fichier a été uploadé
     if (!isset($_FILES['json_file']) || $_FILES['json_file']['error'] !== UPLOAD_ERR_OK) {
-        $errors[] = 'Erreur lors de l\'upload du fichier.';
+        $errors[] = __('file_upload_error');
     } else {
         $file_tmp = $_FILES['json_file']['tmp_name'];
         $file_content = file_get_contents($file_tmp);
         
         if (!$file_content) {
-            $errors[] = 'Impossible de lire le contenu du fichier.';
+            $errors[] = __('file_read_error');
         } else {
             // Importer la commande
             $commande_id = importCommandeJSON($file_content, $user_id);
             
             if ($commande_id) {
-                $_SESSION['flash_message'] = 'Commande importée avec succès.';
+                $_SESSION['flash_message'] = __('order_imported');
                 $_SESSION['flash_type'] = 'success';
                 header('Location: admin_commande.php?id=' . $commande_id);
                 exit;
             } else {
-                $errors[] = 'Erreur lors de l\'importation de la commande. Vérifiez le format du fichier JSON.';
+                $errors[] = __('import_error_check_format');
             }
         }
     }
@@ -47,28 +47,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $json_content = trim($_POST['json_content'] ?? '');
     
     if (empty($json_content)) {
-        $errors[] = 'Le contenu JSON est vide.';
+        $errors[] = __('json_content_empty');
     } else {
         // Importer la commande
         $commande_id = importCommandeJSON($json_content, $user_id);
         
         if ($commande_id) {
-            $_SESSION['flash_message'] = 'Commande importée avec succès.';
+            $_SESSION['flash_message'] = __('order_imported');
             $_SESSION['flash_type'] = 'success';
             header('Location: admin_commande.php?id=' . $commande_id);
             exit;
         } else {
-            $errors[] = 'Erreur lors de l\'importation de la commande. Vérifiez le format du contenu JSON.';
+            $errors[] = __('import_error_check_format');
         }
     }
 }
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Importer une commande</h1>
+    <h1><?php echo __('import_order'); ?></h1>
     <div>
         <a href="/dashboard.php" class="btn btn-outline-primary">
-            Retour au tableau de bord
+            <?php echo __('back_to_dashboard'); ?>
         </a>
     </div>
 </div>
@@ -93,20 +93,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Importer depuis un fichier</h5>
+                <h5 class="mb-0"><?php echo __('import_from_file'); ?></h5>
             </div>
             <div class="card-body">
                 <form method="post" action="" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="import">
                     
                     <div class="mb-3">
-                        <label for="json_file" class="form-label required-field">Fichier JSON</label>
+                        <label for="json_file" class="form-label required-field"><?php echo __('json_file'); ?></label>
                         <input type="file" class="form-control" id="json_file" name="json_file" accept=".json" required>
-                        <small class="form-text text-muted">Sélectionnez un fichier JSON exporté depuis l'application.</small>
+                        <small class="form-text text-muted"><?php echo __('select_json_file'); ?></small>
                     </div>
                     
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Importer</button>
+                        <button type="submit" class="btn btn-primary"><?php echo __('import'); ?></button>
                     </div>
                 </form>
             </div>
@@ -116,20 +116,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Importer depuis un texte</h5>
+                <h5 class="mb-0"><?php echo __('import_from_text'); ?></h5>
             </div>
             <div class="card-body">
                 <form method="post" action="">
                     <input type="hidden" name="action" value="import_text">
                     
                     <div class="mb-3">
-                        <label for="json_content" class="form-label required-field">Contenu JSON</label>
+                        <label for="json_content" class="form-label required-field"><?php echo __('json_content'); ?></label>
                         <textarea class="form-control" id="json_content" name="json_content" rows="10" required></textarea>
-                        <small class="form-text text-muted">Collez le contenu JSON d'une commande exportée.</small>
+                        <small class="form-text text-muted"><?php echo __('paste_json_content'); ?></small>
                     </div>
                     
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Importer</button>
+                        <button type="submit" class="btn btn-primary"><?php echo __('import'); ?></button>
                     </div>
                 </form>
             </div>
@@ -139,10 +139,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 <div class="card mb-4">
     <div class="card-header">
-        <h5 class="mb-0">Format JSON attendu</h5>
+        <h5 class="mb-0"><?php echo __('expected_json_format'); ?></h5>
     </div>
     <div class="card-body">
-        <p>Le fichier JSON doit respecter le format suivant :</p>
+        <p><?php echo __('json_format_description'); ?></p>
         <pre class="bg-light p-3 rounded">
 {
   "titre": "Nom de la commande",

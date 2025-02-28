@@ -1,7 +1,7 @@
 <?php
 require_once 'includes/config.php';
-$page_title = __('home');
 require_once 'includes/header.php';
+$page_title = __('home');
 ?>
 
 <div class="jumbotron bg-light p-5 rounded mb-4">

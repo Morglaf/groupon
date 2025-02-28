@@ -1,6 +1,6 @@
 <?php
-$page_title = "Inscription";
 require_once 'includes/header.php';
+$page_title = __('register');
 
 // Rediriger si déjà connecté
 if (isLoggedIn()) {
@@ -48,39 +48,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = __('required_field');
     } elseif (!isValidEmail($form_data['email'])) {
         $errors[] = __('invalid_email');
-    } elseif (userExists($form_data['email'])) {
-        $errors[] = __('email_already_exists');
+    } elseif (emailExists($form_data['email'])) {
+        $errors[] = __('email_exists');
     }
     
     if (empty($password)) {
         $errors[] = __('required_field');
     } elseif (strlen($password) < 8) {
-        $errors[] = __('password_too_short');
+        $errors[] = __('min_8_chars');
     }
     
     if ($password !== $password_confirm) {
-        $errors[] = __('passwords_dont_match');
+        $errors[] = __('passwords_not_match');
     }
     
     // Vérification Turnstile si activé
     if (USE_TURNSTILE) {
         $turnstile_token = $_POST['cf-turnstile-response'] ?? '';
         if (!verifyTurnstile($turnstile_token)) {
-            $errors[] = 'Vérification anti-robot échouée. Veuillez réessayer.';
+            $errors[] = __('turnstile_failed');
         }
     }
     
-    // Création du compte
+    // Créer l'utilisateur si pas d'erreurs
     if (empty($errors)) {
-        $user_data = createUser($form_data['email'], $password, $form_data['nom'], $form_data['prenom']);
+        $user_id = createUser($form_data['prenom'], $form_data['nom'], $form_data['email'], $password);
         
-        if ($user_data) {
+        if ($user_id) {
             // Connexion automatique
+            $user_data = getUserData($user_id);
             loginUser($user_data);
             
             $_SESSION['flash_message'] = __('account_created');
             $_SESSION['flash_type'] = 'success';
             
+            // Redirection
             header('Location: ' . $redirect);
             exit;
         } else {
@@ -94,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h1 class="h3 mb-0">Inscription</h1>
+                <h1 class="h3 mb-0"><?php echo __('register'); ?></h1>
             </div>
             <div class="card-body">
                 <?php if (!empty($errors)): ?>
@@ -108,33 +110,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
                 
                 <form method="post" action="">
-                    <?php if (isset($_GET['redirect'])): ?>
-                    <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($_GET['redirect']); ?>">
-                    <?php endif; ?>
-                    
-                    <div class="mb-3">
-                        <label for="prenom" class="form-label required-field"><?php echo __('first_name'); ?></label>
-                        <input type="text" class="form-control" id="prenom" name="prenom" value="<?php echo htmlspecialchars($form_data['prenom']); ?>" required>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="prenom" class="form-label"><?php echo __('first_name'); ?></label>
+                            <input type="text" class="form-control" id="prenom" name="prenom" value="<?php echo htmlspecialchars($form_data['prenom']); ?>" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="nom" class="form-label"><?php echo __('last_name'); ?></label>
+                            <input type="text" class="form-control" id="nom" name="nom" value="<?php echo htmlspecialchars($form_data['nom']); ?>" required>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="nom" class="form-label required-field"><?php echo __('last_name'); ?></label>
-                        <input type="text" class="form-control" id="nom" name="nom" value="<?php echo htmlspecialchars($form_data['nom']); ?>" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="email" class="form-label required-field"><?php echo __('email'); ?></label>
+                        <label for="email" class="form-label"><?php echo __('email'); ?></label>
                         <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($form_data['email']); ?>" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password" class="form-label required-field"><?php echo __('password'); ?></label>
+                        <label for="password" class="form-label"><?php echo __('password'); ?></label>
                         <input type="password" class="form-control" id="password" name="password" required>
-                        <small class="form-text text-muted"><?php echo __('min_8_chars'); ?></small>
+                        <div class="form-text"><?php echo __('min_8_chars'); ?></div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password_confirm" class="form-label required-field"><?php echo __('confirm_password'); ?></label>
+                        <label for="password_confirm" class="form-label"><?php echo __('confirm_password'); ?></label>
                         <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
                     </div>
                     
@@ -145,13 +144,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                     <?php endif; ?>
                     
+                    <?php if (isset($_GET['redirect'])): ?>
+                    <input type="hidden" name="redirect" value="<?php echo htmlspecialchars($_GET['redirect']); ?>">
+                    <?php endif; ?>
+                    
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary"><?php echo __('sign_up'); ?></button>
+                        <button type="submit" class="btn btn-primary"><?php echo __('register'); ?></button>
                     </div>
                 </form>
             </div>
             <div class="card-footer text-center">
-                <?php echo __('already_registered'); ?> <a href="/login.php<?php echo isset($_GET['redirect']) ? '?redirect='.htmlspecialchars($_GET['redirect']) : ''; ?>"><?php echo __('login_now'); ?></a>
+                <?php echo __('already_registered'); ?> <a href="/login.php"><?php echo __('login'); ?></a>
             </div>
         </div>
     </div>

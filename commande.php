@@ -3,7 +3,7 @@ require_once 'includes/header.php';
 
 // Vérifier si l'ID de commande est fourni
 if (!isset($_GET['id'])) {
-    $_SESSION['flash_message'] = 'ID de commande manquant.';
+    $_SESSION['flash_message'] = __('missing_order_id');
     $_SESSION['flash_type'] = 'danger';
     header('Location: index.php');
     exit;
@@ -14,20 +14,20 @@ $commande_data = getCommandeData($commande_id);
 
 // Vérifier si la commande existe
 if (!$commande_data) {
-    $_SESSION['flash_message'] = 'Commande introuvable.';
+    $_SESSION['flash_message'] = __('order_not_found');
     $_SESSION['flash_type'] = 'danger';
     header('Location: index.php');
     exit;
 }
 
-$page_title = "Commande: " . $commande_data['titre'];
+$page_title = __('order') . ": " . $commande_data['titre'];
 $user_id = getCurrentUserId();
 $is_admin = isCommandeAdmin($commande_id, $user_id);
 $is_participant = isCommandeParticipant($commande_id, $user_id);
 $is_closed = isCommandeClosed($commande_data);
 
 $admin_data = getUserData($commande_data['admin_id']);
-$admin_name = $admin_data ? $admin_data['prenom'] . ' ' . $admin_data['nom'] : 'Administrateur';
+$admin_name = $admin_data ? $admin_data['prenom'] . ' ' . $admin_data['nom'] : __('administrator');
 
 $date_limite = new DateTime($commande_data['date_limite']);
 $date_recup = new DateTime($commande_data['date_recuperation']);
@@ -104,11 +104,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div>
         <?php if ($is_admin): ?>
         <a href="/admin_commande.php?id=<?php echo $commande_id; ?>" class="btn btn-primary">
-            Mode administration
+            <?php echo __('admin_mode'); ?>
         </a>
         <?php endif; ?>
         <a href="/dashboard.php" class="btn btn-outline-secondary ms-2">
-            Tableau de bord
+            <?php echo __('dashboard'); ?>
         </a>
     </div>
 </div>
@@ -133,23 +133,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="col-md-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Informations</h5>
+                <h5 class="mb-0"><?php echo __('information'); ?></h5>
                 <span class="badge bg-<?php echo $is_closed ? 'secondary' : 'success'; ?>">
-                    <?php echo $is_closed ? 'Fermée' : 'Ouverte'; ?>
+                    <?php echo $is_closed ? __('closed') : __('open'); ?>
                 </span>
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <strong>Organisateur:</strong> <?php echo htmlspecialchars($admin_name); ?>
+                    <strong><?php echo __('organizer'); ?>:</strong> <?php echo htmlspecialchars($admin_name); ?>
                 </div>
                 <div class="mb-3">
-                    <strong>Date limite:</strong> 
+                    <strong><?php echo __('deadline'); ?>:</strong> 
                     <span class="<?php echo $is_closed ? '' : 'date-limite'; ?>">
                         <?php echo $date_limite->format('d/m/Y H:i'); ?>
                     </span>
                 </div>
                 <div class="mb-3">
-                    <strong>Récupération:</strong> 
+                    <strong><?php echo __('pickup'); ?>:</strong> 
                     <?php echo $date_recup->format('d/m/Y H:i'); ?>
                     <br>
                     <small><?php echo htmlspecialchars($commande_data['adresse_recuperation']); ?></small>
@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <?php if (isset($commande_data['description']) && !empty($commande_data['description'])): ?>
                 <div class="mb-3">
-                    <strong>Description:</strong>
+                    <strong><?php echo __('description'); ?>:</strong>
                     <div class="mt-2 p-2 bg-light rounded">
                         <?php echo nl2br(htmlspecialchars($commande_data['description'])); ?>
                     </div>
@@ -165,17 +165,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php endif; ?>
                 
                 <div class="mb-3">
-                    <strong>Type de commande:</strong> 
+                    <strong><?php echo __('order_type'); ?>:</strong> 
                     <?php 
                     switch ($commande_data['type_commande']) {
                         case 'poids':
-                            echo 'Basée sur le poids total';
+                            echo __('weight_based');
                             break;
                         case 'nombre':
-                            echo 'Basée sur le nombre de produits';
+                            echo __('quantity_based');
                             break;
                         case 'montant':
-                            echo 'Basée sur le coût total';
+                            echo __('cost_based');
                             break;
                     }
                     ?>
@@ -184,10 +184,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php if (!isLoggedIn()): ?>
                 <hr>
                 <div class="alert alert-info">
-                    <p>Vous devez être connecté pour participer à cette commande.</p>
+                    <p><?php echo __('must_login_to_join'); ?></p>
                     <div class="d-grid gap-2">
-                        <a href="/login.php?redirect=<?php echo urlencode('commande.php?id=' . $commande_id); ?>" class="btn btn-primary">Se connecter</a>
-                        <a href="/register.php" class="btn btn-outline-secondary">S'inscrire</a>
+                        <a href="/login.php?redirect=<?php echo urlencode('commande.php?id=' . $commande_id); ?>" class="btn btn-primary"><?php echo __('login'); ?></a>
+                        <a href="/register.php" class="btn btn-outline-secondary"><?php echo __('register'); ?></a>
                     </div>
                 </div>
                 <?php elseif (!$is_participant && !$is_admin): ?>
@@ -196,7 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="hidden" name="action" value="join">
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-lg" <?php echo $is_closed ? 'disabled' : ''; ?>>
-                            Participer à cette commande
+                            <?php echo __('join_order'); ?>
                         </button>
                     </div>
                 </form>
@@ -205,19 +205,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php if ($is_participant && $participant_data): ?>
                 <hr>
                 <div class="mb-3">
-                    <strong>Ma commande:</strong> <?php echo number_format($participant_data['montant_produits'], 2, ',', ' '); ?> €
+                    <strong><?php echo __('my_order'); ?>:</strong> <?php echo number_format($participant_data['montant_produits'], 2, ',', ' '); ?> €
                 </div>
                 <div class="mb-3">
-                    <strong>Frais de port:</strong> <?php echo number_format($participant_data['part_frais_port'], 2, ',', ' '); ?> €
+                    <strong><?php echo __('shipping_fees'); ?>:</strong> <?php echo number_format($participant_data['part_frais_port'], 2, ',', ' '); ?> €
                 </div>
                 <div class="mb-3">
-                    <strong>Total à payer:</strong> 
+                    <strong><?php echo __('total_to_pay'); ?>:</strong> 
                     <span class="fw-bold"><?php echo number_format($participant_data['montant_total'], 2, ',', ' '); ?> €</span>
                 </div>
                 <div class="mb-3">
-                    <strong>Statut paiement:</strong> 
+                    <strong><?php echo __('payment_status'); ?>:</strong> 
                     <span class="<?php echo $participant_data['statut_paiement'] ? 'payment-status-paid' : 'payment-status-unpaid'; ?>">
-                        <?php echo $participant_data['statut_paiement'] ? 'Payé' : 'Non payé'; ?>
+                        <?php echo $participant_data['statut_paiement'] ? __('paid') : __('unpaid'); ?>
                     </span>
                 </div>
                 <?php endif; ?>
@@ -228,12 +228,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Produits disponibles</h5>
+                <h5 class="mb-0"><?php echo __('available_products'); ?></h5>
             </div>
             <div class="card-body">
                 <?php if (empty($commande_data['produits'])): ?>
                 <div class="alert alert-info">
-                    Aucun produit n'a encore été ajouté à cette commande.
+                    <?php echo __('no_products_added'); ?>
                 </div>
                 <?php else: ?>
                 
@@ -246,11 +246,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Produit</th>
-                                <th>Poids</th>
-                                <th>Prix</th>
+                                <th><?php echo __('product'); ?></th>
+                                <th><?php echo __('weight'); ?></th>
+                                <th><?php echo __('price'); ?></th>
                                 <?php if (($is_participant || $is_admin) && !$is_closed): ?>
-                                <th>Quantité</th>
+                                <th><?php echo __('quantity'); ?></th>
                                 <?php endif; ?>
                             </tr>
                         </thead>
@@ -260,8 +260,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <td colspan="<?php echo ($is_participant || $is_admin) && !$is_closed ? '4' : '3'; ?>" class="fw-bold">
                                     <?php echo htmlspecialchars($produit['nom']); ?>
                                     <?php if (!empty($produit['url'])): ?>
-                                    <a href="<?php echo htmlspecialchars($produit['url']); ?>" target="_blank" class="product-link ms-2" data-bs-toggle="tooltip" title="Plus d'informations">
-                                        <small><i class="fas fa-info-circle"></i> Info</small>
+                                    <a href="<?php echo htmlspecialchars($produit['url']); ?>" target="_blank" class="product-link ms-2" data-bs-toggle="tooltip" title="<?php echo __('more_info'); ?>">
+                                        <small><i class="fas fa-info-circle"></i> <?php echo __('info'); ?></small>
                                     </a>
                                     <?php endif; ?>
                                 </td>
@@ -306,7 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <?php if (($is_participant || $is_admin) && !$is_closed): ?>
                 <div class="d-grid gap-2 mt-3">
-                    <button type="submit" class="btn btn-primary">Mettre à jour ma commande</button>
+                    <button type="submit" class="btn btn-primary"><?php echo __('update_my_order'); ?></button>
                 </div>
                 </form>
                 <?php endif; ?>
@@ -322,18 +322,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Récapitulatif des commandes</h5>
+                <h5 class="mb-0"><?php echo __('order_summary'); ?></h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Produit</th>
-                                <th>Variation</th>
-                                <th>Quantité</th>
-                                <th>Poids</th>
-                                <th>Montant</th>
+                                <th><?php echo __('product'); ?></th>
+                                <th><?php echo __('variation'); ?></th>
+                                <th><?php echo __('quantity'); ?></th>
+                                <th><?php echo __('weight'); ?></th>
+                                <th><?php echo __('amount'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -391,17 +391,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?php endforeach; ?>
                             
                             <tr class="table-light">
-                                <td colspan="2" class="fw-bold">TOTAL</td>
+                                <td colspan="2" class="fw-bold"><?php echo __('total'); ?></td>
                                 <td class="fw-bold"><?php echo $total_quantite; ?></td>
                                 <td class="fw-bold"><?php echo number_format($total_poids, 2, ',', ' '); ?> kg</td>
                                 <td class="fw-bold"><?php echo number_format($total_montant, 2, ',', ' '); ?> €</td>
                             </tr>
                             <tr class="table-light">
-                                <td colspan="4" class="fw-bold">Frais de port</td>
+                                <td colspan="4" class="fw-bold"><?php echo __('shipping_fees'); ?></td>
                                 <td class="fw-bold"><?php echo number_format($commande_data['frais_port'], 2, ',', ' '); ?> €</td>
                             </tr>
                             <tr class="table-primary">
-                                <td colspan="4" class="fw-bold">TOTAL GÉNÉRAL</td>
+                                <td colspan="4" class="fw-bold"><?php echo __('grand_total'); ?></td>
                                 <td class="fw-bold"><?php echo number_format($total_montant + $commande_data['frais_port'], 2, ',', ' '); ?> €</td>
                             </tr>
                         </tbody>

@@ -3,7 +3,7 @@ require_once 'includes/header.php';
 
 // Vérifier si l'ID de commande est fourni
 if (!isset($_GET['id'])) {
-    $_SESSION['flash_message'] = 'ID de commande manquant.';
+    $_SESSION['flash_message'] = __('missing_order_id');
     $_SESSION['flash_type'] = 'danger';
     header('Location: dashboard.php');
     exit;
@@ -14,7 +14,7 @@ $commande_data = getCommandeData($commande_id);
 
 // Vérifier si la commande existe
 if (!$commande_data) {
-    $_SESSION['flash_message'] = 'Commande introuvable.';
+    $_SESSION['flash_message'] = __('order_not_found');
     $_SESSION['flash_type'] = 'danger';
     header('Location: dashboard.php');
     exit;
@@ -24,7 +24,7 @@ if (!$commande_data) {
 requireCommandeAdmin($commande_id);
 
 $user_id = getCurrentUserId();
-$page_title = "Gestion de commande: " . $commande_data['titre'];
+$page_title = __('manage_order') . ": " . $commande_data['titre'];
 
 // Récupérer les données
 $is_closed = isCommandeClosed($commande_data);
@@ -245,10 +245,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <h1><?php echo htmlspecialchars($commande_data['titre']); ?></h1>
     <div>
         <a href="/commande.php?id=<?php echo $commande_id; ?>" class="btn btn-outline-secondary me-2">
-            Voir la commande
+            <?php echo __('view_order'); ?>
         </a>
         <a href="/dashboard.php" class="btn btn-outline-primary">
-            Retour au tableau de bord
+            <?php echo __('back_to_dashboard'); ?>
         </a>
     </div>
 </div>
@@ -273,52 +273,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <div class="col-md-4">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Informations</h5>
+                <h5 class="mb-0"><?php echo __('information'); ?></h5>
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <strong>Date limite:</strong> 
+                    <strong><?php echo __('deadline'); ?>:</strong> 
                     <span class="<?php echo $is_closed ? '' : 'date-limite'; ?>">
                         <?php echo $date_limite->format('d/m/Y H:i'); ?>
                     </span>
                     <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#updateDatesModal">
-                        <i class="fas fa-edit"></i> Modifier
+                        <i class="fas fa-edit"></i> <?php echo __('modify'); ?>
                     </button>
                 </div>
                 <div class="mb-3">
-                    <strong>Récupération:</strong> 
+                    <strong><?php echo __('pickup'); ?>:</strong> 
                     <?php echo $date_recup->format('d/m/Y H:i'); ?>
                     <br>
                     <small><?php echo htmlspecialchars($commande_data['adresse_recuperation']); ?></small>
                 </div>
                 <div class="mb-3">
-                    <strong>Type de commande:</strong> 
+                    <strong><?php echo __('order_type'); ?>:</strong> 
                     <?php 
                     switch ($commande_data['type_commande']) {
                         case 'poids':
-                            echo 'Basée sur le poids total';
+                            echo __('based_on_weight');
                             break;
                         case 'nombre':
-                            echo 'Basée sur le nombre de produits';
+                            echo __('based_on_quantity');
                             break;
                         case 'montant':
-                            echo 'Basée sur le coût total';
+                            echo __('based_on_amount');
                             break;
                     }
                     ?>
                 </div>
                 <div class="mb-3">
-                    <strong>Lien de partage:</strong>
+                    <strong><?php echo __('share_link'); ?>:</strong>
                     <div class="input-group">
                         <input type="text" class="form-control" value="<?php echo APP_URL . '/commande.php?id=' . $commande_id; ?>" readonly id="share-link">
-                        <button class="btn btn-outline-secondary" type="button" onclick="copyShareLink()">Copier</button>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyShareLink()"><?php echo __('copy'); ?></button>
                     </div>
                 </div>
                 
                 <div class="mb-3">
-                    <strong>Description:</strong>
+                    <strong><?php echo __('description'); ?>:</strong>
                     <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#updateDescriptionModal">
-                        <i class="fas fa-edit"></i> <?php echo isset($commande_data['description']) && !empty($commande_data['description']) ? 'Modifier' : 'Ajouter'; ?>
+                        <i class="fas fa-edit"></i> <?php echo isset($commande_data['description']) && !empty($commande_data['description']) ? __('modify') : __('add'); ?>
                     </button>
                     <?php if (isset($commande_data['description']) && !empty($commande_data['description'])): ?>
                     <div class="mt-2 p-2 bg-light rounded">
@@ -328,20 +328,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </div>
                 
                 <div class="mb-3">
-                    <strong>Visibilité:</strong>
+                    <strong><?php echo __('visibility'); ?>:</strong>
                     <form method="post" action="" class="d-inline ms-2">
                         <input type="hidden" name="action" value="update_public_status">
                         <input type="hidden" name="is_public" value="<?php echo isset($commande_data['public']) && $commande_data['public'] ? '0' : '1'; ?>">
                         <button type="submit" class="btn btn-sm btn-outline-<?php echo isset($commande_data['public']) && $commande_data['public'] ? 'warning' : 'success'; ?>">
                             <i class="fas fa-<?php echo isset($commande_data['public']) && $commande_data['public'] ? 'eye-slash' : 'eye'; ?>"></i>
-                            <?php echo isset($commande_data['public']) && $commande_data['public'] ? 'Rendre privée' : 'Rendre publique'; ?>
+                            <?php echo isset($commande_data['public']) && $commande_data['public'] ? __('make_private') : __('make_public'); ?>
                         </button>
                     </form>
                     <div class="mt-1">
                         <small class="text-muted">
                             <?php echo isset($commande_data['public']) && $commande_data['public'] 
-                                ? 'Cette commande est visible par tous les utilisateurs sur le tableau de bord.' 
-                                : 'Cette commande n\'est visible que par les participants.'; ?>
+                                ? __('public_order_description') 
+                                : __('private_order_description'); ?>
                         </small>
                     </div>
                 </div>
@@ -352,21 +352,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <form method="post" action="" class="mb-2">
                         <input type="hidden" name="action" value="send_reminder">
                         <button type="submit" class="btn btn-warning w-100" <?php echo $is_closed ? 'disabled' : ''; ?>>
-                            <i class="fas fa-bell"></i> Envoyer un rappel
+                            <i class="fas fa-bell"></i> <?php echo __('send_reminder'); ?>
                         </button>
                     </form>
                     
                     <form method="post" action="" class="mb-2">
                         <input type="hidden" name="action" value="send_pickup">
                         <button type="submit" class="btn btn-info w-100">
-                            <i class="fas fa-truck"></i> Envoyer les infos de récupération
+                            <i class="fas fa-truck"></i> <?php echo __('send_pickup'); ?>
                         </button>
                     </form>
                     
                     <form method="post" action="" class="mb-2">
                         <input type="hidden" name="action" value="generate_pdf">
                         <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-file-pdf"></i> Exporter en PDF
+                            <i class="fas fa-file-pdf"></i> <?php echo __('export_pdf'); ?>
                         </button>
                     </form>
                     
@@ -374,13 +374,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <form method="post" action="" class="w-50">
                             <input type="hidden" name="action" value="export_json">
                             <button type="submit" class="btn btn-secondary w-100">
-                                <i class="fas fa-file-code"></i> Exporter JSON
+                                <i class="fas fa-file-code"></i> <?php echo __('export_json'); ?>
                             </button>
                         </form>
                         <form method="post" action="" class="w-50">
                             <input type="hidden" name="action" value="duplicate_order">
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-copy"></i> Dupliquer
+                                <i class="fas fa-copy"></i> <?php echo __('duplicate_order'); ?>
                             </button>
                         </form>
                     </div>
@@ -398,19 +398,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <div class="row">
                     <div class="col-md-3 text-center">
                         <h3><?php echo $nb_participants; ?></h3>
-                        <p>Participants</p>
+                        <p><?php echo __('participants'); ?></p>
                     </div>
                     <div class="col-md-3 text-center">
                         <h3><?php echo count($commande_data['produits']); ?></h3>
-                        <p>Produits</p>
+                        <p><?php echo __('products'); ?></p>
                     </div>
                     <div class="col-md-3 text-center">
                         <h3><?php echo number_format($commande_data['montant_total'], 2, ',', ' '); ?> €</h3>
-                        <p>Montant total</p>
+                        <p><?php echo __('total_amount'); ?></p>
                     </div>
                     <div class="col-md-3 text-center">
                         <h3><?php echo number_format($commande_data['frais_port'], 2, ',', ' '); ?> €</h3>
-                        <p>Frais de port</p>
+                        <p><?php echo __('shipping_fee'); ?></p>
                     </div>
                 </div>
                 
@@ -418,7 +418,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 
                 <div class="row">
                     <div class="col-md-6">
-                        <h5>Poids total</h5>
+                        <h5><?php echo __('total_weight'); ?></h5>
                         <div class="progress mb-3" style="height: 25px;">
                             <?php
                             $paliers = $commande_data['paliers_frais'];
@@ -461,12 +461,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         <small>
                             <?php 
                             if ($current_palier) {
-                                echo 'Palier actuel: ' . $current_palier['min'] . ' - ' . $current_palier['max'] . ' kg';
+                                echo __('current_tier') . ': ' . $current_palier['min'] . ' - ' . $current_palier['max'] . ' kg';
                                 
                                 if ($next_palier) {
                                     $reste = $next_palier['min'] - $commande_data['poids_total'];
                                     if ($reste > 0) {
-                                        echo ' (encore ' . number_format($reste, 2, ',', ' ') . ' kg pour le prochain palier)';
+                                        echo ' (' . __('still_need') . ' ' . number_format($reste, 2, ',', ' ') . ' kg ' . __('for_next_tier') . ')';
                                     }
                                 }
                             }
@@ -475,7 +475,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     </div>
                     
                     <div class="col-md-6">
-                        <h5>Paiements</h5>
+                        <h5><?php echo __('payments'); ?></h5>
                         <?php
                         $total_paid = 0;
                         $total_amount = 0;
@@ -497,7 +497,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             </div>
                         </div>
                         <small>
-                            <?php echo number_format($total_paid, 2, ',', ' '); ?> € reçus sur <?php echo number_format($total_amount, 2, ',', ' '); ?> €
+                            <?php echo __('paid_amount') . ': ' . number_format($total_paid, 2, ',', ' '); ?> € '<?php echo __('received_from'); ?> <?php echo number_format($total_amount, 2, ',', ' '); ?> €
                         </small>
                     </div>
                 </div>
@@ -510,15 +510,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Produits</h5>
+                <h5 class="mb-0"><?php echo __('products'); ?></h5>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal" <?php echo $is_closed ? 'disabled' : ''; ?>>
-                    Ajouter un produit
+                    <?php echo __('add_product'); ?>
                 </button>
             </div>
             <div class="card-body">
                 <?php if (empty($commande_data['produits'])): ?>
                 <div class="alert alert-info">
-                    Aucun produit n'a été ajouté à cette commande.
+                    <?php echo __('no_products_added'); ?>
                 </div>
                 <?php else: ?>
                 <div class="row">
@@ -529,12 +529,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <h5>
                                     <?php echo htmlspecialchars($produit['nom']); ?>
                                     <?php if (!empty($produit['url'])): ?>
-                                    <a href="<?php echo htmlspecialchars($produit['url']); ?>" target="_blank" class="product-link ms-2" data-bs-toggle="tooltip" title="Plus d'informations">
-                                        <small><i class="fas fa-info-circle"></i> Info</small>
+                                    <a href="<?php echo htmlspecialchars($produit['url']); ?>" target="_blank" class="product-link ms-2" data-bs-toggle="tooltip" title="<?php echo __('more_info'); ?>">
+                                        <small><i class="fas fa-info-circle"></i> <?php echo __('info'); ?></small>
                                     </a>
                                     <?php endif; ?>
                                 </h5>
-                                <form method="post" action="" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
+                                <form method="post" action="" onsubmit="return confirm('<?php echo __('are_you_sure_delete_product'); ?>');">
                                     <input type="hidden" name="action" value="delete_product">
                                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
                                     <button type="submit" class="btn btn-sm btn-danger" <?php echo $is_closed ? 'disabled' : ''; ?>>
@@ -546,10 +546,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <table class="table table-sm">
                                     <thead>
                                         <tr>
-                                            <th>Variation</th>
-                                            <th>Poids</th>
-                                            <th>Prix</th>
-                                            <th>Actions</th>
+                                            <th><?php echo __('variation'); ?></th>
+                                            <th><?php echo __('weight'); ?></th>
+                                            <th><?php echo __('price'); ?></th>
+                                            <th><?php echo __('actions'); ?></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -559,7 +559,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                             <td><?php echo number_format($variation['poids'], 2, ',', ' '); ?> kg</td>
                                             <td><?php echo number_format($variation['prix'], 2, ',', ' '); ?> €</td>
                                             <td>
-                                                <form method="post" action="" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette variation ?');">
+                                                <form method="post" action="" onsubmit="return confirm('<?php echo __('are_you_sure_delete_variation'); ?>');">
                                                     <input type="hidden" name="action" value="delete_variation">
                                                     <input type="hidden" name="produit_id" value="<?php echo $produit['id']; ?>">
                                                     <input type="hidden" name="variation_id" value="<?php echo $variation['id']; ?>">
@@ -587,25 +587,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <div class="col-md-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Participants</h5>
+                <h5 class="mb-0"><?php echo __('participants'); ?></h5>
             </div>
             <div class="card-body">
                 <?php if (empty($commande_data['participants'])): ?>
                 <div class="alert alert-info">
-                    Aucun participant n'a rejoint cette commande.
+                    <?php echo __('no_participants_joined'); ?>
                 </div>
                 <?php else: ?>
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
-                                <th>Participant</th>
-                                <th>Produits</th>
-                                <th>Montant produits</th>
-                                <th>Frais de port</th>
-                                <th>Total</th>
-                                <th>Statut paiement</th>
-                                <th>Actions</th>
+                                <th><?php echo __('participant'); ?></th>
+                                <th><?php echo __('products'); ?></th>
+                                <th><?php echo __('product_amount'); ?></th>
+                                <th><?php echo __('shipping_fee'); ?></th>
+                                <th><?php echo __('total'); ?></th>
+                                <th><?php echo __('payment_status'); ?></th>
+                                <th><?php echo __('actions'); ?></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -618,7 +618,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <td><?php echo htmlspecialchars($user_name); ?></td>
                                 <td>
                                     <?php if (empty($participant['commandes'])): ?>
-                                    <span class="text-muted">Aucun produit</span>
+                                    <span class="text-muted"><?php echo __('no_products'); ?></span>
                                     <?php else: ?>
                                     <ul class="mb-0">
                                         <?php foreach ($participant['commandes'] as $article): ?>
@@ -640,7 +640,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <td><?php echo number_format($participant['montant_total'], 2, ',', ' '); ?> €</td>
                                 <td>
                                     <span class="<?php echo $participant['statut_paiement'] ? 'payment-status-paid' : 'payment-status-unpaid'; ?>">
-                                        <?php echo $participant['statut_paiement'] ? 'Payé' : 'Non payé'; ?>
+                                        <?php echo $participant['statut_paiement'] ? __('paid') : __('unpaid'); ?>
                                     </span>
                                 </td>
                                 <td>
@@ -649,7 +649,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                         <input type="hidden" name="participant_id" value="<?php echo $participant['user_id']; ?>">
                                         <input type="hidden" name="statut" value="<?php echo $participant['statut_paiement'] ? '0' : '1'; ?>">
                                         <button type="submit" class="btn btn-sm btn-<?php echo $participant['statut_paiement'] ? 'warning' : 'success'; ?>">
-                                            <?php echo $participant['statut_paiement'] ? 'Marquer comme non payé' : 'Marquer comme payé'; ?>
+                                            <?php echo $participant['statut_paiement'] ? __('mark_as_unpaid') : __('mark_as_paid'); ?>
                                         </button>
                                     </form>
                                 </td>
@@ -672,49 +672,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <input type="hidden" name="action" value="add_product">
                 
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addProductModalLabel">Ajouter un produit</h5>
+                    <h5 class="modal-title" id="addProductModalLabel"><?php echo __('add_product'); ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="nom_produit" class="form-label required-field">Nom du produit</label>
+                        <label for="nom_produit" class="form-label required-field"><?php echo __('product_name'); ?></label>
                         <input type="text" class="form-control" id="nom_produit" name="nom_produit" required>
                     </div>
 
                     <div class="mb-3">
-                        <label for="url_produit" class="form-label">URL d'information (facultatif)</label>
+                        <label for="url_produit" class="form-label"><?php echo __('product_info_url'); ?></label>
                         <input type="url" class="form-control" id="url_produit" name="url_produit" placeholder="https://...">
-                        <small class="form-text text-muted">Lien vers une page d'information sur le produit</small>
+                        <small class="form-text text-muted"><?php echo __('product_info_url_description'); ?></small>
                     </div>
                     
-                    <h5 class="mt-4 mb-3">Variations</h5>
+                    <h5 class="mt-4 mb-3"><?php echo __('variations'); ?></h5>
                     
                     <div id="variations-container">
                         <div class="variation-row row mb-3">
                             <div class="col-md-4">
-                                <input type="text" name="variations[0][nom]" class="form-control" placeholder="Nom de la variation" required>
+                                <input type="text" name="variations[0][nom]" class="form-control" placeholder="<?php echo __('variation_name'); ?>" required>
                             </div>
                             <div class="col-md-3">
-                                <input type="number" name="variations[0][poids]" class="form-control" placeholder="Poids (kg)" step="0.01" min="0" required>
+                                <input type="number" name="variations[0][poids]" class="form-control" placeholder="<?php echo __('weight'); ?>" step="0.01" min="0" required>
                             </div>
                             <div class="col-md-3">
-                                <input type="number" name="variations[0][prix]" class="form-control" placeholder="Prix (€)" step="0.01" min="0" required>
+                                <input type="number" name="variations[0][prix]" class="form-control" placeholder="<?php echo __('price'); ?>" step="0.01" min="0" required>
                             </div>
                             <div class="col-md-2">
-                                <button type="button" class="btn btn-danger w-100" onclick="removeVariation(this)" disabled>Supprimer</button>
+                                <button type="button" class="btn btn-danger w-100" onclick="removeVariation(this)" disabled><?php echo __('delete'); ?></button>
                             </div>
                         </div>
                     </div>
                     
                     <button type="button" class="btn btn-secondary mt-2" onclick="addVariationField()">
-                        Ajouter une variation
+                        <?php echo __('add_variation'); ?>
                     </button>
                 </div>
                 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo __('cancel'); ?></button>
+                    <button type="submit" class="btn btn-primary"><?php echo __('add'); ?></button>
                 </div>
             </form>
         </div>
@@ -729,29 +729,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <input type="hidden" name="action" value="update_dates">
                 
                 <div class="modal-header">
-                    <h5 class="modal-title" id="updateDatesModalLabel">Modifier les dates</h5>
+                    <h5 class="modal-title" id="updateDatesModalLabel"><?php echo __('modify_dates'); ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="date_limite" class="form-label required-field">Date limite</label>
+                        <label for="date_limite" class="form-label required-field"><?php echo __('deadline'); ?></label>
                         <input type="datetime-local" class="form-control" id="date_limite" name="date_limite" 
                                value="<?php echo $date_limite->format('Y-m-d\TH:i'); ?>" required>
-                        <small class="form-text text-muted">Date limite pour passer commande</small>
+                        <small class="form-text text-muted"><?php echo __('deadline_description'); ?></small>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="date_recuperation" class="form-label required-field">Date de récupération</label>
+                        <label for="date_recuperation" class="form-label required-field"><?php echo __('pickup'); ?></label>
                         <input type="datetime-local" class="form-control" id="date_recuperation" name="date_recuperation" 
                                value="<?php echo $date_recup->format('Y-m-d\TH:i'); ?>" required>
-                        <small class="form-text text-muted">Date de récupération des produits</small>
+                        <small class="form-text text-muted"><?php echo __('pickup_description'); ?></small>
                     </div>
                 </div>
                 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo __('cancel'); ?></button>
+                    <button type="submit" class="btn btn-primary"><?php echo __('update'); ?></button>
                 </div>
             </form>
         </div>
@@ -766,21 +766,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <input type="hidden" name="action" value="update_description">
                 
                 <div class="modal-header">
-                    <h5 class="modal-title" id="updateDescriptionModalLabel">Description de la commande</h5>
+                    <h5 class="modal-title" id="updateDescriptionModalLabel"><?php echo __('order_description'); ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
+                        <label for="description" class="form-label"><?php echo __('description'); ?></label>
                         <textarea class="form-control" id="description" name="description" rows="5"><?php echo isset($commande_data['description']) ? htmlspecialchars($commande_data['description']) : ''; ?></textarea>
-                        <small class="form-text text-muted">Informations supplémentaires sur la commande</small>
+                        <small class="form-text text-muted"><?php echo __('order_description_description'); ?></small>
                     </div>
                 </div>
                 
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><?php echo __('cancel'); ?></button>
+                    <button type="submit" class="btn btn-primary"><?php echo __('save'); ?></button>
                 </div>
             </form>
         </div>
@@ -793,7 +793,7 @@ function copyShareLink() {
     shareLink.select();
     document.execCommand('copy');
     
-    alert('Lien copié dans le presse-papier !');
+    alert('<?php echo __('link_copied'); ?>');
 }
 </script>
 

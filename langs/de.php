@@ -55,6 +55,8 @@ $translations = [
     'no_orders_created' => 'Sie haben noch keine Bestellungen erstellt.',
     'create_one_now' => 'Jetzt eine erstellen',
     'no_participations' => 'Sie nehmen derzeit an keinen Bestellungen teil.',
+    'public_orders' => 'Öffentliche Bestellungen',
+    'import_order' => 'Bestellung importieren',
     
     // Bestellung
     'order' => 'Bestellung',
@@ -146,6 +148,7 @@ $translations = [
     'login_success' => 'Anmeldung erfolgreich.',
     'must_login_to_join' => 'Sie müssen angemeldet sein, um an dieser Bestellung teilzunehmen.',
     'order_closed' => 'Diese Bestellung ist geschlossen. Sie können sie nicht mehr ändern.',
+    'turnstile_failed' => 'Roboterüberprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.',
     
     // Validierung
     'required_field' => 'Dieses Feld ist erforderlich.',
@@ -157,8 +160,55 @@ $translations = [
     'future_date' => 'Das Datum muss in der Zukunft liegen.',
     'pickup_after_deadline' => 'Abholdatum muss nach der Frist liegen.',
     'at_least_one_tier' => 'Mindestens eine Versandstaffel ist erforderlich.',
-    'invalid_url' => 'Produkt-URL ist nicht gültig.',
+    'invalid_url' => 'Die Produkt-URL ist ungültig.',
     'at_least_one_variation' => 'Mindestens eine gültige Variation ist erforderlich.',
-    'wrong_credentials' => 'Falsche E-Mail oder falsches Passwort.',
+    'wrong_credentials' => 'Falsche E-Mail oder Passwort.',
+    'invalid_order_type' => 'Ungültiger Bestelltyp.',
+    
+    // Neue Schlüssel für commande.php
+    'missing_order_id' => 'Fehlende Bestellnummer.',
+    'order_not_found' => 'Bestellung nicht gefunden.',
+    'administrator' => 'Administrator',
+    'description' => 'Beschreibung',
+    'product' => 'Produkt',
+    'weight' => 'Gewicht',
+    'price' => 'Preis',
+    'quantity' => 'Menge',
+    'info' => 'Info',
+    'update_my_order' => 'Meine Bestellung aktualisieren',
+    'variation' => 'Variation',
+    'amount' => 'Betrag',
+    'total' => 'GESAMT',
+    'shipping_fees' => 'Versandkosten',
+    'no_products_added' => 'Dieser Bestellung wurden noch keine Produkte hinzugefügt.',
+    
+    // Neue Schlüssel für import_commande.php
+    'must_login_to_import' => 'Sie müssen angemeldet sein, um eine Bestellung zu importieren.',
+    'file_upload_error' => 'Fehler beim Hochladen der Datei.',
+    'file_read_error' => 'Dateiinhalt kann nicht gelesen werden.',
+    'order_imported' => 'Bestellung erfolgreich importiert.',
+    'import_error_check_format' => 'Fehler beim Importieren der Bestellung. Überprüfen Sie das JSON-Dateiformat.',
+    'json_content_empty' => 'JSON-Inhalt ist leer.',
+    'import_from_file' => 'Aus Datei importieren',
+    'json_file' => 'JSON-Datei',
+    'select_json_file' => 'Wählen Sie eine aus der Anwendung exportierte JSON-Datei aus.',
+    'import' => 'Importieren',
+    'import_from_text' => 'Aus Text importieren',
+    'json_content' => 'JSON-Inhalt',
+    'paste_json_content' => 'Fügen Sie den JSON-Inhalt einer exportierten Bestellung ein.',
+    'expected_json_format' => 'Erwartetes JSON-Format',
+    'json_format_description' => 'Die JSON-Datei muss diesem Format folgen:',
+    
+    // Neue Schlüssel
+    'product_info_url' => 'Informations-URL (optional)',
+    'product_info_url_description' => 'Link zur Produktinformationsseite',
+    'based_on_weight' => 'Basierend auf Gesamtgewicht',
+    'based_on_quantity' => 'Basierend auf Produktanzahl',
+    'based_on_amount' => 'Basierend auf Gesamtbetrag',
+    'private_order_description' => 'Diese Bestellung ist nur für Teilnehmer sichtbar',
+    'send_pickup' => 'Abholinformationen senden',
+    'duplicate_order' => 'Bestellung duplizieren',
+    'paid_amount' => 'Erhaltener Betrag',
+    'received_from' => 'von insgesamt',
 ];
 ?>

@@ -1,6 +1,6 @@
 <?php
-$page_title = "Tableau de bord";
 require_once 'includes/header.php';
+$page_title = __('dashboard');
 
 // Rediriger si non connecté
 requireLogin();
@@ -48,32 +48,32 @@ usort($commandes_participant, function($a, $b) {
 });
 ?>
 
-<h1 class="mb-4">Tableau de bord</h1>
+<h1 class="mb-4"><?php echo __('dashboard'); ?></h1>
 
 <div class="row dashboard-stats">
     <div class="col-md-4 text-center">
         <h3><?php echo count($commandes_admin); ?></h3>
-        <p>Commandes créées</p>
+        <p><?php echo __('orders_created'); ?></p>
     </div>
     <div class="col-md-4 text-center">
         <h3><?php echo count($commandes_participant); ?></h3>
-        <p>Commandes participées</p>
+        <p><?php echo __('orders_joined'); ?></p>
     </div>
     <div class="col-md-4 text-center">
         <h3><?php echo count($user_data['historique_commandes'] ?? []); ?></h3>
-        <p>Commandes terminées</p>
+        <p><?php echo __('orders_completed'); ?></p>
     </div>
 </div>
 
 <div class="row mb-4">
     <div class="col-md-12 d-flex justify-content-between align-items-center">
-        <h2>Mes commandes créées</h2>
+        <h2><?php echo __('my_created_orders'); ?></h2>
         <div>
             <a href="/import_commande.php" class="btn btn-outline-primary me-2">
-                <i class="fas fa-file-import"></i> Importer une commande
+                <i class="fas fa-file-import"></i> <?php echo __('import_order'); ?>
             </a>
             <a href="/create_commande.php" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Créer une commande
+                <i class="fas fa-plus"></i> <?php echo __('create_order'); ?>
             </a>
         </div>
     </div>
@@ -81,7 +81,7 @@ usort($commandes_participant, function($a, $b) {
 
 <?php if (empty($commandes_admin)): ?>
 <div class="alert alert-info">
-    Vous n'avez pas encore créé de commande. <a href="/create_commande.php">Créez-en une maintenant</a>.
+    <?php echo __('no_orders_created'); ?> <a href="/create_commande.php"><?php echo __('create_one_now'); ?></a>.
 </div>
 <?php else: ?>
 <div class="row">
@@ -97,39 +97,30 @@ usort($commandes_participant, function($a, $b) {
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><?php echo htmlspecialchars($commande['titre']); ?></h5>
                 <span class="badge bg-<?php echo $is_closed ? 'secondary' : 'success'; ?>">
-                    <?php echo $is_closed ? 'Fermée' : 'Ouverte'; ?>
+                    <?php echo $is_closed ? __('closed') : __('open'); ?>
                 </span>
             </div>
             <div class="card-body">
-                <div class="mb-3">
-                    <strong>Date limite:</strong> 
-                    <span class="<?php echo $is_closed ? '' : 'date-limite'; ?>">
-                        <?php echo $date_limite->format('d/m/Y H:i'); ?>
-                    </span>
+                <p class="mb-1">
+                    <strong><?php echo __('created_on'); ?>:</strong> <?php echo formatDate($commande['date_creation']); ?>
+                </p>
+                <p class="mb-1">
+                    <strong><?php echo __('deadline'); ?>:</strong> <?php echo formatDate($commande['date_limite']); ?>
+                </p>
+                <p class="mb-1">
+                    <strong><?php echo __('pickup_date'); ?>:</strong> <?php echo formatDate($commande['date_recuperation']); ?>
+                </p>
+                <p class="mb-1">
+                    <strong><?php echo __('participants'); ?>:</strong> <?php echo $nb_participants; ?>
+                </p>
+                <div class="mt-3">
+                    <a href="/admin_commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-primary btn-sm">
+                        <i class="fas fa-cog"></i> <?php echo __('manage'); ?>
+                    </a>
+                    <a href="/commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-eye"></i> <?php echo __('view'); ?>
+                    </a>
                 </div>
-                <div class="mb-3">
-                    <strong>Récupération:</strong> 
-                    <?php echo $date_recup->format('d/m/Y H:i'); ?>
-                    <br>
-                    <small><?php echo htmlspecialchars($commande['adresse_recuperation']); ?></small>
-                </div>
-                <div class="mb-3">
-                    <strong>Participants:</strong> <?php echo $nb_participants; ?>
-                </div>
-                <div class="mb-3">
-                    <strong>Montant total:</strong> <?php echo number_format($commande['montant_total'], 2, ',', ' '); ?> €
-                </div>
-                <div class="mb-3">
-                    <strong>Frais de port:</strong> <?php echo number_format($commande['frais_port'], 2, ',', ' '); ?> €
-                </div>
-                
-                <div class="d-grid gap-2">
-                    <a href="/admin_commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-primary">Gérer</a>
-                    <a href="/commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-outline-secondary">Voir</a>
-                </div>
-            </div>
-            <div class="card-footer text-muted">
-                Créée le <?php echo (new DateTime($commande['date_creation']))->format('d/m/Y'); ?>
             </div>
         </div>
     </div>
@@ -137,80 +128,52 @@ usort($commandes_participant, function($a, $b) {
 </div>
 <?php endif; ?>
 
-<hr class="my-4">
-
-<div class="row mb-4">
+<div class="row mb-4 mt-5">
     <div class="col-md-12">
-        <h2>Mes participations</h2>
+        <h2><?php echo __('my_participations'); ?></h2>
     </div>
 </div>
 
 <?php if (empty($commandes_participant)): ?>
 <div class="alert alert-info">
-    Vous ne participez à aucune commande pour le moment.
+    <?php echo __('no_participations'); ?>
 </div>
 <?php else: ?>
 <div class="row">
     <?php foreach ($commandes_participant as $commande): ?>
     <?php
     $is_closed = isCommandeClosed($commande);
-    $participant_data = getParticipantCommande($commande, $user_id);
+    $admin_data = getUserData($commande['admin_id']);
+    $admin_name = $admin_data ? $admin_data['prenom'] . ' ' . $admin_data['nom'] : __('organizer');
     $date_limite = new DateTime($commande['date_limite']);
     $date_recup = new DateTime($commande['date_recuperation']);
-    
-    // Récupérer les infos de l'admin
-    $admin_data = getUserData($commande['admin_id']);
-    $admin_name = $admin_data ? $admin_data['prenom'] . ' ' . $admin_data['nom'] : 'Inconnu';
     ?>
     <div class="col-md-6 mb-4">
         <div class="card commande-card <?php echo $is_closed ? 'commande-closed' : ''; ?>">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><?php echo htmlspecialchars($commande['titre']); ?></h5>
                 <span class="badge bg-<?php echo $is_closed ? 'secondary' : 'success'; ?>">
-                    <?php echo $is_closed ? 'Fermée' : 'Ouverte'; ?>
+                    <?php echo $is_closed ? __('closed') : __('open'); ?>
                 </span>
             </div>
             <div class="card-body">
-                <div class="mb-3">
-                    <strong>Organisateur:</strong> <?php echo htmlspecialchars($admin_name); ?>
+                <p class="mb-1">
+                    <strong><?php echo __('organizer'); ?>:</strong> <?php echo htmlspecialchars($admin_name); ?>
+                </p>
+                <p class="mb-1">
+                    <strong><?php echo __('deadline'); ?>:</strong> <?php echo formatDate($commande['date_limite']); ?>
+                </p>
+                <p class="mb-1">
+                    <strong><?php echo __('pickup_date'); ?>:</strong> <?php echo formatDate($commande['date_recuperation']); ?>
+                </p>
+                <p class="mb-1">
+                    <strong><?php echo __('pickup_address'); ?>:</strong> <?php echo htmlspecialchars($commande['adresse_recuperation']); ?>
+                </p>
+                <div class="mt-3">
+                    <a href="/commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-primary btn-sm">
+                        <i class="fas fa-shopping-cart"></i> <?php echo __('my_order'); ?>
+                    </a>
                 </div>
-                <div class="mb-3">
-                    <strong>Date limite:</strong> 
-                    <span class="<?php echo $is_closed ? '' : 'date-limite'; ?>">
-                        <?php echo $date_limite->format('d/m/Y H:i'); ?>
-                    </span>
-                </div>
-                <div class="mb-3">
-                    <strong>Récupération:</strong> 
-                    <?php echo $date_recup->format('d/m/Y H:i'); ?>
-                    <br>
-                    <small><?php echo htmlspecialchars($commande['adresse_recuperation']); ?></small>
-                </div>
-                
-                <?php if ($participant_data): ?>
-                <div class="mb-3">
-                    <strong>Ma commande:</strong> <?php echo number_format($participant_data['montant_produits'], 2, ',', ' '); ?> €
-                </div>
-                <div class="mb-3">
-                    <strong>Frais de port:</strong> <?php echo number_format($participant_data['part_frais_port'], 2, ',', ' '); ?> €
-                </div>
-                <div class="mb-3">
-                    <strong>Total à payer:</strong> <span class="fw-bold"><?php echo number_format($participant_data['montant_total'], 2, ',', ' '); ?> €</span>
-                </div>
-                <div class="mb-3">
-                    <strong>Statut paiement:</strong> 
-                    <span class="<?php echo $participant_data['statut_paiement'] ? 'payment-status-paid' : 'payment-status-unpaid'; ?>">
-                        <?php echo $participant_data['statut_paiement'] ? 'Payé' : 'Non payé'; ?>
-                    </span>
-                </div>
-                <?php endif; ?>
-                
-                <div class="d-grid">
-                    <a href="/commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-primary">Voir / Modifier</a>
-                </div>
-            </div>
-            <div class="card-footer text-muted">
-                Créée le <?php echo (new DateTime($commande['date_creation']))->format('d/m/Y'); ?>
             </div>
         </div>
     </div>
@@ -218,12 +181,10 @@ usort($commandes_participant, function($a, $b) {
 </div>
 <?php endif; ?>
 
-<!-- Commandes publiques -->
 <?php if (!empty($commandes_publiques)): ?>
 <div class="row mb-4 mt-5">
     <div class="col-md-12">
-        <h2>Commandes publiques</h2>
-        <p class="text-muted">Ces commandes sont ouvertes à tous les utilisateurs.</p>
+        <h2><?php echo __('public_orders'); ?></h2>
     </div>
 </div>
 
@@ -231,49 +192,35 @@ usort($commandes_participant, function($a, $b) {
     <?php foreach ($commandes_publiques as $commande): ?>
     <?php
     $is_closed = isCommandeClosed($commande);
+    if ($is_closed) continue; // Ne pas afficher les commandes fermées
+    
+    $admin_data = getUserData($commande['admin_id']);
+    $admin_name = $admin_data ? $admin_data['prenom'] . ' ' . $admin_data['nom'] : __('organizer');
     $date_limite = new DateTime($commande['date_limite']);
     $date_recup = new DateTime($commande['date_recuperation']);
     ?>
     <div class="col-md-6 mb-4">
-        <div class="card commande-card <?php echo $is_closed ? 'commande-closed' : ''; ?>">
+        <div class="card commande-card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><?php echo htmlspecialchars($commande['titre']); ?></h5>
-                <span class="badge bg-<?php echo $is_closed ? 'secondary' : 'success'; ?>">
-                    <?php echo $is_closed ? 'Fermée' : 'Ouverte'; ?>
-                </span>
+                <span class="badge bg-success"><?php echo __('open'); ?></span>
             </div>
             <div class="card-body">
-                <div class="mb-3">
-                    <strong>Date limite:</strong> 
-                    <span class="<?php echo $is_closed ? '' : 'date-limite'; ?>">
-                        <?php echo $date_limite->format('d/m/Y H:i'); ?>
-                    </span>
-                </div>
-                <div class="mb-3">
-                    <strong>Récupération:</strong> 
-                    <?php echo $date_recup->format('d/m/Y H:i'); ?>
-                    <br>
-                    <small><?php echo htmlspecialchars($commande['adresse_recuperation']); ?></small>
-                </div>
-                <div class="mb-3">
-                    <strong>Organisateur:</strong> 
-                    <?php 
-                    $admin_data = getUserData($commande['admin_id']);
-                    echo $admin_data ? htmlspecialchars($admin_data['prenom'] . ' ' . $admin_data['nom']) : 'Administrateur';
-                    ?>
-                </div>
-                <?php if (isset($commande['description']) && !empty($commande['description'])): ?>
-                <div class="mb-3">
-                    <strong>Description:</strong>
-                    <div class="mt-2 p-2 bg-light rounded">
-                        <?php echo nl2br(htmlspecialchars(substr($commande['description'], 0, 150))); ?>
-                        <?php if (strlen($commande['description']) > 150): ?>...<?php endif; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-                <div class="d-grid">
-                    <a href="/commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-primary">
-                        Voir la commande
+                <p class="mb-1">
+                    <strong><?php echo __('organizer'); ?>:</strong> <?php echo htmlspecialchars($admin_name); ?>
+                </p>
+                <p class="mb-1">
+                    <strong><?php echo __('deadline'); ?>:</strong> <?php echo formatDate($commande['date_limite']); ?>
+                </p>
+                <p class="mb-1">
+                    <strong><?php echo __('pickup_date'); ?>:</strong> <?php echo formatDate($commande['date_recuperation']); ?>
+                </p>
+                <p class="mb-1">
+                    <strong><?php echo __('pickup_address'); ?>:</strong> <?php echo htmlspecialchars($commande['adresse_recuperation']); ?>
+                </p>
+                <div class="mt-3">
+                    <a href="/commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-primary btn-sm">
+                        <i class="fas fa-eye"></i> <?php echo __('view'); ?>
                     </a>
                 </div>
             </div>

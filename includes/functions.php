@@ -1392,4 +1392,16 @@ function verifyTurnstile($token) {
     $result = json_decode($response, true);
     return isset($result['success']) && $result['success'] === true;
 }
+
+/**
+ * Formate une date au format lisible
+ * @param string $date Date au format ISO
+ * @return string Date formatée
+ */
+function formatDate($date) {
+    if (empty($date)) return '';
+    
+    $date_obj = new DateTime($date);
+    return $date_obj->format('d/m/Y H:i');
+}
 ?>

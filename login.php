@@ -1,6 +1,6 @@
 <?php
-$page_title = "Connexion";
 require_once 'includes/header.php';
+$page_title = __('login');
 
 // Rediriger si déjà connecté
 if (isLoggedIn()) {
@@ -18,18 +18,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Validation
     if (empty($email)) {
-        $errors[] = 'L\'email est requis.';
+        $errors[] = __('required_field');
     }
     
     if (empty($password)) {
-        $errors[] = 'Le mot de passe est requis.';
+        $errors[] = __('required_field');
     }
     
     // Vérification Turnstile si activé
     if (USE_TURNSTILE) {
         $turnstile_token = $_POST['cf-turnstile-response'] ?? '';
         if (!verifyTurnstile($turnstile_token)) {
-            $errors[] = 'Vérification anti-robot échouée. Veuillez réessayer.';
+            $errors[] = __('turnstile_failed');
         }
     }
     
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Connexion réussie
             loginUser($user_data);
             
-            $_SESSION['flash_message'] = 'Connexion réussie.';
+            $_SESSION['flash_message'] = __('login_success');
             $_SESSION['flash_type'] = 'success';
             
             // Redirection
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: ' . $redirect);
             exit;
         } else {
-            $errors[] = 'Email ou mot de passe incorrect.';
+            $errors[] = __('wrong_credentials');
         }
     }
 }
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h1 class="h3 mb-0">Connexion</h1>
+                <h1 class="h3 mb-0"><?php echo __('login'); ?></h1>
             </div>
             <div class="card-body">
                 <?php if (!empty($errors)): ?>
@@ -74,12 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <form method="post" action="">
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
+                        <label for="email" class="form-label"><?php echo __('email'); ?></label>
                         <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="password" class="form-label">Mot de passe</label>
+                        <label for="password" class="form-label"><?php echo __('password'); ?></label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
                     
@@ -95,12 +95,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <?php endif; ?>
                     
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Se connecter</button>
+                        <button type="submit" class="btn btn-primary"><?php echo __('login'); ?></button>
                     </div>
                 </form>
             </div>
             <div class="card-footer text-center">
-                Pas encore de compte ? <a href="/register.php">Inscrivez-vous</a>
+                <?php echo __('not_registered'); ?> <a href="/register.php"><?php echo __('sign_up'); ?></a>
             </div>
         </div>
     </div>

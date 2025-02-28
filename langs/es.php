@@ -54,7 +54,9 @@ $translations = [
     'my_participations' => 'Mis participaciones',
     'no_orders_created' => 'Aún no has creado ningún pedido.',
     'create_one_now' => 'Crear uno ahora',
-    'no_participations' => 'No estás participando en ningún pedido actualmente.',
+    'no_participations' => 'No estás participando en ningún pedido en este momento.',
+    'public_orders' => 'Pedidos públicos',
+    'import_order' => 'Importar pedido',
     
     // Pedido
     'order' => 'Pedido',
@@ -146,6 +148,7 @@ $translations = [
     'login_success' => 'Inicio de sesión exitoso.',
     'must_login_to_join' => 'Debes iniciar sesión para unirte a este pedido.',
     'order_closed' => 'Este pedido está cerrado. Ya no puedes modificarlo.',
+    'turnstile_failed' => 'Verificación de robot fallida. Por favor, inténtalo de nuevo.',
     
     // Validación
     'required_field' => 'Este campo es obligatorio.',
@@ -160,5 +163,52 @@ $translations = [
     'invalid_url' => 'La URL del producto no es válida.',
     'at_least_one_variation' => 'Se requiere al menos una variación válida.',
     'wrong_credentials' => 'Correo electrónico o contraseña incorrectos.',
+    'invalid_order_type' => 'Tipo de pedido no válido.',
+    
+    // Nuevas claves para commande.php
+    'missing_order_id' => 'Falta el ID del pedido.',
+    'order_not_found' => 'Pedido no encontrado.',
+    'administrator' => 'Administrador',
+    'description' => 'Descripción',
+    'product' => 'Producto',
+    'weight' => 'Peso',
+    'price' => 'Precio',
+    'quantity' => 'Cantidad',
+    'info' => 'Info',
+    'update_my_order' => 'Actualizar mi pedido',
+    'variation' => 'Variación',
+    'amount' => 'Importe',
+    'total' => 'TOTAL',
+    'shipping_fees' => 'Gastos de envío',
+    'no_products_added' => 'Aún no se han añadido productos a este pedido.',
+    
+    // Nuevas claves para import_commande.php
+    'must_login_to_import' => 'Debes iniciar sesión para importar un pedido.',
+    'file_upload_error' => 'Error al subir el archivo.',
+    'file_read_error' => 'No se puede leer el contenido del archivo.',
+    'order_imported' => 'Pedido importado con éxito.',
+    'import_error_check_format' => 'Error al importar el pedido. Comprueba el formato del archivo JSON.',
+    'json_content_empty' => 'El contenido JSON está vacío.',
+    'import_from_file' => 'Importar desde archivo',
+    'json_file' => 'Archivo JSON',
+    'select_json_file' => 'Selecciona un archivo JSON exportado desde la aplicación.',
+    'import' => 'Importar',
+    'import_from_text' => 'Importar desde texto',
+    'json_content' => 'Contenido JSON',
+    'paste_json_content' => 'Pega el contenido JSON de un pedido exportado.',
+    'expected_json_format' => 'Formato JSON esperado',
+    'json_format_description' => 'El archivo JSON debe seguir este formato:',
+    
+    // Nuevas claves
+    'product_info_url' => 'URL de información (opcional)',
+    'product_info_url_description' => 'Enlace a la página de información del producto',
+    'based_on_weight' => 'Basado en peso total',
+    'based_on_quantity' => 'Basado en cantidad de productos',
+    'based_on_amount' => 'Basado en monto total',
+    'private_order_description' => 'Este pedido solo es visible para los participantes',
+    'send_pickup' => 'Enviar información de recogida',
+    'duplicate_order' => 'Duplicar pedido',
+    'paid_amount' => 'Monto recibido',
+    'received_from' => 'de un total de',
 ];
 ?>
