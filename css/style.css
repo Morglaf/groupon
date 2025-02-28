@@ -1,0 +1,99 @@
+/* Styles généraux */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+footer {
+    margin-top: auto;
+}
+
+.card {
+    margin-bottom: 20px;
+}
+
+/* Styles pour les commandes */
+.commande-card {
+    transition: transform 0.2s;
+}
+
+.commande-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.date-limite {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.commande-closed {
+    opacity: 0.7;
+}
+
+/* Styles pour les produits */
+.product-item {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+}
+
+.variation-item {
+    border-left: 3px solid #28a745;
+    padding-left: 10px;
+    margin: 10px 0;
+}
+
+/* Styles pour le tableau de bord */
+.dashboard-stats {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.payment-status-paid {
+    color: #28a745;
+}
+
+.payment-status-unpaid {
+    color: #dc3545;
+}
+
+/* Styles pour les tableaux */
+.table-responsive {
+    overflow-x: auto;
+}
+
+/* Styles pour les formulaires */
+.required-field::after {
+    content: " *";
+    color: #dc3545;
+}
+
+/* Styles pour les notifications */
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    padding: 3px 6px;
+    border-radius: 50%;
+    background: #dc3545;
+    color: white;
+}
+
+/* Styles pour responsive */
+@media (max-width: 768px) {
+    .btn-responsive {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}

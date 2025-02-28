@@ -1,0 +1,13 @@
+{
+    "id": "b4ea1908e5da8a70fbf88ef93ba6e514",
+    "email": "gabu@morglaf.com",
+    "nom": "Krier",
+    "prenom": "Robin",
+    "password_hash": "$2y$10$V4EGN3WSOoKwzJ1B98bny..y0ZVMK.0xaJ3tjjvj2MUv\/f1fZ8woW",
+    "date_inscription": "2025-02-27T12:00:44",
+    "commandes_admin": [
+        "358cc7ea256b9d2668092a9e87cd4b2d"
+    ],
+    "commandes_participant": [],
+    "historique_commandes": []
+}

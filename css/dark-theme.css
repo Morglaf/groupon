@@ -1,0 +1,291 @@
+/* Thème sombre */
+body.dark-theme {
+    background-color: #222;
+    color: #e4e4e4;
+}
+
+/* Cartes et conteneurs */
+.dark-theme .card {
+    background-color: #333;
+    border-color: #444;
+}
+
+.dark-theme .card-header,
+.dark-theme .card-footer {
+    background-color: #2a2a2a;
+    border-color: #444;
+}
+
+.dark-theme .list-group-item {
+    background-color: #333;
+    border-color: #444;
+    color: #e4e4e4;
+}
+
+.dark-theme .modal-content {
+    background-color: #333;
+    border-color: #444;
+}
+
+.dark-theme .modal-header,
+.dark-theme .modal-footer {
+    background-color: #2a2a2a;
+    border-color: #444;
+}
+
+/* Formulaires */
+.dark-theme input.form-control,
+.dark-theme select.form-select,
+.dark-theme textarea.form-control {
+    background-color: #444;
+    border-color: #555;
+    color: #e4e4e4;
+}
+
+.dark-theme input.form-control:focus,
+.dark-theme select.form-select:focus,
+.dark-theme textarea.form-control:focus {
+    background-color: #555;
+    color: #fff;
+}
+
+.dark-theme .input-group-text {
+    background-color: #555;
+    border-color: #666;
+    color: #e4e4e4;
+}
+
+/* Tableaux */
+.dark-theme .table {
+    color: #e4e4e4;
+}
+
+.dark-theme .table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: #3a3a3a;
+}
+
+.dark-theme .table-hover > tbody > tr:hover {
+    background-color: #444;
+}
+
+.dark-theme .table-light,
+.dark-theme .table-light > td,
+.dark-theme .table-light > th {
+    background-color: #444;
+    color: #e4e4e4;
+}
+
+.dark-theme .table-primary,
+.dark-theme .table-primary > td,
+.dark-theme .table-primary > th {
+    background-color: #375a7f;
+    color: #e4e4e4;
+}
+
+/* Navigation */
+.dark-theme .navbar {
+    background-color: #222 !important;
+}
+
+.dark-theme .navbar-brand,
+.dark-theme .nav-link {
+    color: #f8f9fa !important;
+}
+
+.dark-theme .navbar-toggler {
+    background-color: #444;
+}
+
+.dark-theme .navbar-toggler-icon {
+    filter: invert(1);
+}
+
+/* Alertes */
+.dark-theme .alert-info {
+    background-color: #264653;
+    border-color: #1d3a46;
+    color: #e0f0f7;
+}
+
+.dark-theme .alert-success {
+    background-color: #2a9d8f;
+    border-color: #237c70;
+    color: #e0f7f5;
+}
+
+.dark-theme .alert-warning {
+    background-color: #e9c46a;
+    border-color: #d4b054;
+    color: #463c1f;
+}
+
+.dark-theme .alert-danger {
+    background-color: #e76f51;
+    border-color: #d4583e;
+    color: #f9ebe7;
+}
+
+/* Boutons */
+.dark-theme .btn-outline-secondary {
+    color: #bbb;
+    border-color: #bbb;
+}
+
+.dark-theme .btn-outline-secondary:hover {
+    background-color: #555;
+    color: #fff;
+}
+
+/* Liens */
+.dark-theme a {
+    color: #5ea3e4;
+}
+
+.dark-theme a:hover {
+    color: #7db7f3;
+}
+
+/* Footer */
+.dark-theme footer {
+    background-color: #222 !important;
+    border-top: 1px solid #444;
+}
+
+/* Produits */
+.dark-theme .product-item {
+    background-color: #2d2d2d;
+    border-color: #444;
+}
+
+.dark-theme .variation-item {
+    border-left-color: #2a9d8f;
+}
+
+/* Badges */
+.dark-theme .badge.bg-success {
+    background-color: #2a9d8f !important;
+}
+
+.dark-theme .badge.bg-secondary {
+    background-color: #555 !important;
+}
+
+/* Statuts */
+.dark-theme .payment-status-paid {
+    color: #2a9d8f;
+}
+
+.dark-theme .payment-status-unpaid {
+    color: #e76f51;
+}
+
+/* Classes génériques */
+.dark-theme .text-muted {
+    color: #aaa !important;
+}
+
+.dark-theme .border {
+    border-color: #444 !important;
+}
+
+.dark-theme .bg-light {
+    background-color: #2d2d2d !important;
+}
+
+.dark-theme .dropdown-menu {
+    background-color: #333;
+    border-color: #444;
+}
+
+.dark-theme .dropdown-item {
+    color: #e4e4e4;
+}
+
+.dark-theme .dropdown-item:hover,
+.dark-theme .dropdown-item:focus {
+    background-color: #444;
+    color: #fff;
+}
+
+.dark-theme .dropdown-item.active {
+    background-color: #375a7f;
+}
+
+.dark-theme .dashboard-stats {
+    background-color: #2d2d2d;
+}
+
+/* Progress bar */
+.dark-theme .progress {
+    background-color: #444;
+}
+
+/* Toggle switch */
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+}
+
+/* Icônes pour le switch */
+.slider:after {
+    content: "☀️";
+    position: absolute;
+    left: 8px;
+    bottom: 6px;
+    color: #fff;
+    font-size: 12px;
+}
+
+input:checked + .slider:after {
+    content: "🌙";
+    left: auto;
+    right: 8px;
+}
