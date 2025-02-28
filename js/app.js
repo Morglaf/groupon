@@ -144,8 +144,22 @@ function toggleTheme() {
             themeSwitch.checked = false;
         }
         
+        // Supprimer la feuille de style du thème sombre si elle existe
+        const darkThemeLink = document.querySelector('link[href="css/dark-theme.css"]');
+        if (darkThemeLink) {
+            darkThemeLink.disabled = true;
+            darkThemeLink.parentNode.removeChild(darkThemeLink);
+        }
+        
         // Envoyer la préférence au serveur
-        fetch('toggle_theme.php?theme=light', { method: 'GET' });
+        fetch('toggle_theme.php?theme=light', { method: 'GET' })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Thème enregistré côté serveur:', data.theme);
+            })
+            .catch(error => {
+                console.error('Erreur lors de l\'enregistrement du thème:', error);
+            });
     } else {
         console.log("Passage au thème sombre");
         // Passer au thème sombre
@@ -158,31 +172,77 @@ function toggleTheme() {
             themeSwitch.checked = true;
         }
         
+        // Ajouter la feuille de style du thème sombre si elle n'existe pas
+        if (!document.querySelector('link[href="css/dark-theme.css"]')) {
+            const darkThemeLink = document.createElement('link');
+            darkThemeLink.rel = 'stylesheet';
+            darkThemeLink.href = 'css/dark-theme.css';
+            document.head.appendChild(darkThemeLink);
+        }
+        
         // Envoyer la préférence au serveur
-        fetch('toggle_theme.php?theme=dark', { method: 'GET' });
+        fetch('toggle_theme.php?theme=dark', { method: 'GET' })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Thème enregistré côté serveur:', data.theme);
+            })
+            .catch(error => {
+                console.error('Erreur lors de l\'enregistrement du thème:', error);
+            });
     }
 }
 
-// Fonction pour initialiser le thème
-function initTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    const themeSwitch = document.getElementById('theme-switch');
+// Initialisation du thème au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOMContentLoaded - Initialisation du thème");
     
+    // Récupérer le thème depuis le localStorage ou utiliser le thème clair par défaut
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    console.log("Thème sauvegardé:", savedTheme);
+    
+    // Appliquer le thème sauvegardé
     if (savedTheme === 'dark') {
+        console.log("Application du thème sombre au chargement");
         document.body.classList.add('dark-mode');
+        
+        // Ajouter la feuille de style du thème sombre
+        if (!document.querySelector('link[href="css/dark-theme.css"]')) {
+            const darkThemeLink = document.createElement('link');
+            darkThemeLink.rel = 'stylesheet';
+            darkThemeLink.href = 'css/dark-theme.css';
+            document.head.appendChild(darkThemeLink);
+        }
+        
+        // Mettre à jour l'état du switch si présent
+        const themeSwitch = document.getElementById('theme-switch');
         if (themeSwitch) {
             themeSwitch.checked = true;
+        }
+    } else {
+        console.log("Application du thème clair au chargement");
+        document.body.classList.remove('dark-mode');
+        
+        // Supprimer la feuille de style du thème sombre si elle existe
+        const darkThemeLink = document.querySelector('link[href="css/dark-theme.css"]');
+        if (darkThemeLink) {
+            darkThemeLink.disabled = true;
+            darkThemeLink.parentNode.removeChild(darkThemeLink);
+        }
+        
+        // Mettre à jour l'état du switch si présent
+        const themeSwitch = document.getElementById('theme-switch');
+        if (themeSwitch) {
+            themeSwitch.checked = false;
         }
     }
     
     // Ajouter l'écouteur d'événement pour le switch de thème
+    const themeSwitch = document.getElementById('theme-switch');
     if (themeSwitch) {
+        console.log("Ajout de l'écouteur d'événement pour le switch de thème");
         themeSwitch.addEventListener('change', toggleTheme);
     }
-}
-
-// Initialisation
-document.addEventListener('DOMContentLoaded', function() {
+    
     // Initialiser les tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
@@ -197,9 +257,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (commandeType) {
         commandeType.addEventListener('change', updateCommandeTypeFields);
     }
-    
-    // Initialiser le thème
-    initTheme();
     
     // Écouteur pour les liens de produits (ouvrir dans une nouvelle fenêtre)
     const productLinks = document.querySelectorAll('.product-link');
