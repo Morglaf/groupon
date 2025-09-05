@@ -1,0 +1,36 @@
+<?php
+/**
+ * Configuration de la base de données MySQL - EXEMPLE
+ * Copiez ce fichier vers database.php et modifiez les paramètres
+ */
+
+// Configuration de la base de données
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'groupon_db');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_PREFIX', 'groupon_');
+define('DB_CHARSET', 'utf8mb4');
+
+// Connexion PDO
+try {
+    $pdo = new PDO(
+        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=' . DB_CHARSET,
+        DB_USER,
+        DB_PASS,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+        ]
+    );
+} catch (PDOException $e) {
+    die('Erreur de connexion à la base de données : ' . $e->getMessage());
+}
+
+// Fonction utilitaire pour obtenir la connexion PDO
+function getDB() {
+    global $pdo;
+    return $pdo;
+}
+?>

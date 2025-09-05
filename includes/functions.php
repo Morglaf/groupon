@@ -1,6 +1,15 @@
 <?php
 require_once 'config.php';
 
+// Rediriger vers l'installateur si MySQL n'est pas configuré
+if (!file_exists(__DIR__ . '/database.php')) {
+    header('Location: ../install.php');
+    exit;
+}
+
+// Les fonctions MySQL sont maintenant dans functions_mysql.php
+// Ce fichier est conservé pour la compatibilité mais les fonctions sont redirigées
+
 /**
  * Génère un ID unique
  * @return string

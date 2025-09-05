@@ -9,7 +9,7 @@ define('APP_NAME', 'Groupon');
 // URL de base de l'application (sans slash final)
 define('APP_URL', 'http://localhost');
 
-// Chemin vers le dossier de données
+// Chemin vers le dossier de données (pour compatibilité, mais plus utilisé)
 define('DATA_DIR', __DIR__ . '/../data');
 define('USERS_DIR', DATA_DIR . '/users');
 define('COMMANDES_DIR', DATA_DIR . '/commandes');
@@ -20,6 +20,19 @@ define('DEFAULT_LANG', 'fr');
 
 // Fuseau horaire
 date_default_timezone_set('Europe/Paris');
+
+// Vérifier si la base de données est configurée
+if (!file_exists(__DIR__ . '/database.php')) {
+    // Rediriger vers l'installateur si pas encore configuré
+    header('Location: ../install.php');
+    exit;
+}
+
+// Charger la configuration de la base de données
+require_once __DIR__ . '/database.php';
+
+// Charger les fonctions MySQL
+require_once __DIR__ . '/functions_mysql.php';
 
 // Configuration de Cloudflare Turnstile
 define('USE_TURNSTILE', false); // Mettre à true pour activer Turnstile

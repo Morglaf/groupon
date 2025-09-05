@@ -1,4 +1,4 @@
-# Fichiers de données
+# Fichiers de données JSON (ancien système)
 data/users/*
 data/commandes/*
 data/exports/*
@@ -8,8 +8,17 @@ data/exports/*
 !data/commandes/.gitkeep
 !data/exports/.gitkeep
 
-# Fichiers de configuration locaux
+# Configuration MySQL
+includes/database.php
 includes/config.local.php
+
+# Fichiers d'installation et de test
+install.php
+test_mysql_migration.php
+migrate_json_to_mysql.php
+
+# Sauvegardes de migration
+data_backup*/
 
 # Fichiers système
 .DS_Store
