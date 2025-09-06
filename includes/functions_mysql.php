@@ -93,7 +93,10 @@ function getCommandeData($commande_id) {
         $stmt->execute([$commande_id]);
         $commande = $stmt->fetch();
         
-        if (!$commande) return null;
+        if (!$commande) {
+            error_log("getCommandeData: Commande $commande_id non trouvée");
+            return null;
+        }
         
         // Récupérer les produits et variations
         $stmt = $pdo->prepare("
@@ -139,6 +142,7 @@ function getCommandeData($commande_id) {
         ");
         $stmt->execute([$commande_id]);
         $participants_data = $stmt->fetchAll();
+        error_log("getCommandeData: Participants trouvés: " . count($participants_data));
         
         $participants = [];
         foreach ($participants_data as $participant) {
@@ -153,7 +157,7 @@ function getCommandeData($commande_id) {
             $stmt->execute([$participant['id']]);
             $articles = $stmt->fetchAll();
             
-            $participants[] = [
+            $participants[$participant['user_id']] = [
                 'user_id' => $participant['user_id'],
                 'commandes' => array_map(function($article) {
                     return [
@@ -190,10 +194,16 @@ function getCommandeData($commande_id) {
         $commande['frais_port'] = (float) $commande['frais_port'];
         $commande['public'] = (bool) $commande['public'];
         
+        error_log("getCommandeData: Succès pour commande $commande_id");
         return $commande;
         
     } catch (PDOException $e) {
         error_log('Erreur getCommandeData: ' . $e->getMessage());
+        error_log('Trace: ' . $e->getTraceAsString());
+        return null;
+    } catch (Exception $e) {
+        error_log('Erreur générale getCommandeData: ' . $e->getMessage());
+        error_log('Trace: ' . $e->getTraceAsString());
         return null;
     }
 }
@@ -590,5 +600,1361 @@ function formatDate($date) {
     
     $date_obj = new DateTime($date);
     return $date_obj->format('d/m/Y H:i');
+}
+
+/**
+ * Récupère les commandes créées par un utilisateur
+ * @param string $user_id ID de l'utilisateur
+ * @return array Liste des commandes
+ */
+function getUserCommandesAdmin($user_id) {
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare("
+            SELECT * FROM " . DB_PREFIX . "commandes 
+            WHERE admin_id = ? 
+            ORDER BY date_creation DESC
+        ");
+        $stmt->execute([$user_id]);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Erreur getUserCommandesAdmin: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Récupère les commandes où un utilisateur est participant
+ * @param string $user_id ID de l'utilisateur
+ * @return array Liste des commandes
+ */
+function getUserCommandesParticipant($user_id) {
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare("
+            SELECT c.* 
+            FROM " . DB_PREFIX . "commandes c
+            JOIN " . DB_PREFIX . "participants p ON c.id = p.commande_id
+            WHERE p.user_id = ? 
+            ORDER BY c.date_creation DESC
+        ");
+        $stmt->execute([$user_id]);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Erreur getUserCommandesParticipant: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Génère un PDF de la commande avec TCPDF
+ * @param string $commande_id ID de la commande
+ * @return string|null Chemin du fichier PDF généré ou null si échec
+ */
+function generateCommandePDF($commande_id) {
+    try {
+        // Vérifier si TCPDF est disponible
+        if (!class_exists('TCPDF')) {
+            error_log('TCPDF non disponible pour generateCommandePDF');
+            return null;
+        }
+        
+        $commande_data = getCommandeData($commande_id);
+        if (!$commande_data) {
+            return null;
+        }
+        
+        // Créer une instance TCPDF
+        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        
+        // Informations du document
+        $app_name = defined('APP_NAME') ? APP_NAME : 'Groupon';
+        $pdf->SetCreator($app_name);
+        $pdf->SetAuthor($app_name);
+        $pdf->SetTitle('Commande: ' . $commande_data['titre']);
+        $pdf->SetSubject('Export de commande groupée');
+        
+        // Marges
+        $pdf->SetMargins(15, 20, 15);
+        $pdf->SetHeaderMargin(10);
+        $pdf->SetFooterMargin(10);
+        
+        // Police par défaut
+        $pdf->SetFont('helvetica', '', 10);
+        
+        // Ajouter une page
+        $pdf->AddPage();
+        
+        // Titre
+        $pdf->SetFont('helvetica', 'B', 16);
+        $pdf->Cell(0, 10, $commande_data['titre'], 0, 1, 'C');
+        $pdf->Ln(5);
+        
+        // Informations générales
+        $pdf->SetFont('helvetica', 'B', 12);
+        $pdf->Cell(0, 8, 'Informations générales', 0, 1);
+        $pdf->SetFont('helvetica', '', 10);
+        
+        $info = [
+            'Type de commande' => ucfirst($commande_data['type_commande']),
+            'Date limite' => formatDate($commande_data['date_limite']),
+            'Date de récupération' => formatDate($commande_data['date_recuperation']),
+            'Adresse de récupération' => $commande_data['adresse_recuperation'],
+            'Montant total' => number_format($commande_data['montant_total'], 2, ',', ' ') . ' €',
+            'Poids total' => number_format($commande_data['poids_total'], 2, ',', ' ') . ' kg',
+            'Frais de port' => number_format($commande_data['frais_port'], 2, ',', ' ') . ' €'
+        ];
+        
+        foreach ($info as $label => $value) {
+            $pdf->Cell(60, 6, $label . ':', 0, 0, 'L');
+            $pdf->Cell(0, 6, $value, 0, 1, 'L');
+        }
+        
+        $pdf->Ln(5);
+        
+        // Produits
+        if (!empty($commande_data['produits'])) {
+            $pdf->SetFont('helvetica', 'B', 12);
+            $pdf->Cell(0, 8, 'Produits disponibles', 0, 1);
+            $pdf->SetFont('helvetica', '', 9);
+            
+            foreach ($commande_data['produits'] as $produit) {
+                $pdf->SetFont('helvetica', 'B', 10);
+                $pdf->Cell(0, 6, $produit['nom'], 0, 1);
+                
+                if (!empty($produit['url'])) {
+                    $pdf->SetFont('helvetica', '', 8);
+                    $pdf->Cell(0, 4, 'Lien: ' . $produit['url'], 0, 1);
+                }
+                
+                // Variations
+                if (!empty($produit['variations'])) {
+                    $pdf->SetFont('helvetica', '', 9);
+                    $pdf->Cell(40, 5, 'Variation', 1, 0, 'C');
+                    $pdf->Cell(30, 5, 'Poids (kg)', 1, 0, 'C');
+                    $pdf->Cell(30, 5, 'Prix (€)', 1, 1, 'C');
+                    
+                    foreach ($produit['variations'] as $variation) {
+                        $pdf->Cell(40, 5, $variation['nom'], 1, 0, 'L');
+                        $pdf->Cell(30, 5, number_format($variation['poids'], 2, ',', ' '), 1, 0, 'R');
+                        $pdf->Cell(30, 5, number_format($variation['prix'], 2, ',', ' '), 1, 1, 'R');
+                    }
+                }
+                
+                $pdf->Ln(3);
+            }
+        }
+        
+        // Paliers de frais
+        if (!empty($commande_data['paliers_frais'])) {
+            $pdf->SetFont('helvetica', 'B', 12);
+            $pdf->Cell(0, 8, 'Paliers de frais de port', 0, 1);
+            $pdf->SetFont('helvetica', '', 9);
+            
+            $pdf->Cell(40, 5, 'Min (kg)', 1, 0, 'C');
+            $pdf->Cell(40, 5, 'Max (kg)', 1, 0, 'C');
+            $pdf->Cell(40, 5, 'Frais (€)', 1, 1, 'C');
+            
+            foreach ($commande_data['paliers_frais'] as $palier) {
+                $pdf->Cell(40, 5, number_format($palier['min'], 2, ',', ' '), 1, 0, 'R');
+                $pdf->Cell(40, 5, $palier['max'] ? number_format($palier['max'], 2, ',', ' ') : '∞', 1, 0, 'R');
+                $pdf->Cell(40, 5, number_format($palier['frais'], 2, ',', ' '), 1, 1, 'R');
+            }
+        }
+        
+        // Participants
+        if (!empty($commande_data['participants'])) {
+            $pdf->AddPage();
+            $pdf->SetFont('helvetica', 'B', 12);
+            $pdf->Cell(0, 8, 'Participants', 0, 1);
+            $pdf->SetFont('helvetica', '', 9);
+            
+            foreach ($commande_data['participants'] as $participant) {
+                $user_data = getUserData($participant['user_id']);
+                $user_name = $user_data ? $user_data['prenom'] . ' ' . $user_data['nom'] : 'Utilisateur #' . $participant['user_id'];
+                
+                $pdf->SetFont('helvetica', 'B', 10);
+                $pdf->Cell(0, 6, $user_name, 0, 1);
+                
+                $pdf->SetFont('helvetica', '', 9);
+                $pdf->Cell(0, 4, 'Montant produits: ' . number_format($participant['montant_produits'], 2, ',', ' ') . ' €', 0, 1);
+                $pdf->Cell(0, 4, 'Part frais de port: ' . number_format($participant['part_frais_port'], 2, ',', ' ') . ' €', 0, 1);
+                $pdf->Cell(0, 4, 'Total: ' . number_format($participant['montant_total'], 2, ',', ' ') . ' €', 0, 1);
+                $pdf->Cell(0, 4, 'Statut paiement: ' . ($participant['statut_paiement'] ? 'Payé' : 'Non payé'), 0, 1);
+                
+                $pdf->Ln(3);
+            }
+        }
+        
+        // Générer le nom de fichier
+        $filename = 'commande_' . $commande_id . '_' . date('Ymd_His') . '.pdf';
+        $file_path = DATA_DIR . '/exports/' . $filename;
+        
+        // Sauvegarder le PDF
+        $pdf->Output($file_path, 'F');
+        
+        return $file_path;
+        
+    } catch (Exception $e) {
+        error_log('Erreur generateCommandePDF: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Supprime une commande et toutes ses données associées
+ * @param string $commande_id ID de la commande
+ * @param string $user_id ID de l'utilisateur (pour vérifier les droits)
+ * @return bool Succès ou échec
+ */
+function deleteCommande($commande_id, $user_id) {
+    try {
+        $pdo = getDB();
+        
+        // Vérifier que l'utilisateur est admin de la commande
+        if (!isCommandeAdmin($commande_id, $user_id)) {
+            return false;
+        }
+        
+        $pdo->beginTransaction();
+        
+        // Supprimer les articles commandés
+        $stmt = $pdo->prepare("
+            DELETE ac FROM " . DB_PREFIX . "articles_commandes ac
+            JOIN " . DB_PREFIX . "participants p ON ac.participant_id = p.id
+            WHERE p.commande_id = ?
+        ");
+        $stmt->execute([$commande_id]);
+        
+        // Supprimer les participants
+        $stmt = $pdo->prepare("DELETE FROM " . DB_PREFIX . "participants WHERE commande_id = ?");
+        $stmt->execute([$commande_id]);
+        
+        // Supprimer les variations
+        $stmt = $pdo->prepare("
+            DELETE v FROM " . DB_PREFIX . "variations v
+            JOIN " . DB_PREFIX . "produits p ON v.produit_id = p.id
+            WHERE p.commande_id = ?
+        ");
+        $stmt->execute([$commande_id]);
+        
+        // Supprimer les produits
+        $stmt = $pdo->prepare("DELETE FROM " . DB_PREFIX . "produits WHERE commande_id = ?");
+        $stmt->execute([$commande_id]);
+        
+        // Supprimer les paliers de frais
+        $stmt = $pdo->prepare("DELETE FROM " . DB_PREFIX . "paliers_frais WHERE commande_id = ?");
+        $stmt->execute([$commande_id]);
+        
+        // Supprimer la commande
+        $stmt = $pdo->prepare("DELETE FROM " . DB_PREFIX . "commandes WHERE id = ?");
+        $stmt->execute([$commande_id]);
+        
+        $pdo->commit();
+        return true;
+        
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log('Erreur deleteCommande: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Vérifie si un utilisateur est admin d'une commande
+ * @param string $commande_id ID de la commande
+ * @param string $user_id ID de l'utilisateur
+ * @return bool
+ */
+function isCommandeAdmin($commande_id, $user_id) {
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare("SELECT admin_id FROM " . DB_PREFIX . "commandes WHERE id = ?");
+        $stmt->execute([$commande_id]);
+        $commande = $stmt->fetch();
+        
+        return $commande && $commande['admin_id'] === $user_id;
+    } catch (PDOException $e) {
+        error_log('Erreur isCommandeAdmin: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Vérifie si un utilisateur est participant d'une commande
+ * @param string $commande_id ID de la commande
+ * @param string $user_id ID de l'utilisateur
+ * @return bool
+ */
+function isCommandeParticipant($commande_id, $user_id) {
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as count 
+            FROM " . DB_PREFIX . "participants 
+            WHERE commande_id = ? AND user_id = ?
+        ");
+        $stmt->execute([$commande_id, $user_id]);
+        $result = $stmt->fetch();
+        
+        return $result['count'] > 0;
+    } catch (PDOException $e) {
+        error_log('Erreur isCommandeParticipant: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Crée une nouvelle commande
+ * @param string $user_id ID de l'utilisateur créateur
+ * @param string $titre Titre de la commande
+ * @param string $type_commande Type de commande (poids, nombre, montant)
+ * @param string $date_limite Date limite
+ * @param string $date_recuperation Date de récupération
+ * @param string $adresse_recuperation Adresse de récupération
+ * @param string $description Description de la commande
+ * @param array $paliers Paliers de frais
+ * @param array $produits Produits avec variations
+ * @return string|null ID de la commande créée ou null si échec
+ */
+function createCommande($user_id, $titre, $type_commande, $date_limite, $date_recuperation, $adresse_recuperation, $description, $paliers, $produits) {
+    try {
+        $pdo = getDB();
+        $pdo->beginTransaction();
+        
+        // Générer un ID unique pour la commande
+        $commande_id = generateUniqueId();
+        
+        // Insérer la commande
+        $stmt = $pdo->prepare("
+            INSERT INTO " . DB_PREFIX . "commandes 
+            (id, titre, admin_id, description, type_commande, date_creation, date_limite, 
+             date_recuperation, adresse_recuperation, montant_total, poids_total, 
+             frais_port, public) 
+            VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, 0, 0, 0, 1)
+        ");
+        $stmt->execute([
+            $commande_id,
+            $titre,
+            $user_id,
+            $description,
+            $type_commande,
+            $date_limite,
+            $date_recuperation,
+            $adresse_recuperation
+        ]);
+        
+        // Insérer les paliers de frais
+        foreach ($paliers as $palier) {
+            $palier_id = generateUniqueId();
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO " . DB_PREFIX . "paliers_frais 
+                (id, commande_id, min_value, max_value, frais) 
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $palier_id,
+                $commande_id,
+                $palier['min'],
+                $palier['max'],
+                $palier['frais']
+            ]);
+        }
+        
+        // Insérer les produits et leurs variations
+        foreach ($produits as $produit) {
+            $produit_id = generateUniqueId();
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO " . DB_PREFIX . "produits (id, commande_id, nom, url) 
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $produit_id,
+                $commande_id,
+                $produit['nom'],
+                $produit['url'] ?? null
+            ]);
+            
+            // Insérer les variations
+            foreach ($produit['variations'] as $variation) {
+                $variation_id = generateUniqueId();
+                
+                $stmt = $pdo->prepare("
+                    INSERT INTO " . DB_PREFIX . "variations (id, produit_id, nom, poids, prix) 
+                    VALUES (?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $variation_id,
+                    $produit_id,
+                    $variation['nom'],
+                    $variation['poids'],
+                    $variation['prix']
+                ]);
+            }
+        }
+        
+        $pdo->commit();
+        return $commande_id;
+        
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log('Erreur createCommande: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Exporte une commande au format JSON
+ * @param string $commande_id ID de la commande
+ * @return string|null Contenu JSON ou null en cas d'erreur
+ */
+function exportCommandeJSON($commande_id) {
+    try {
+        $commande_data = getCommandeData($commande_id);
+        if (!$commande_data) {
+            return null;
+        }
+        
+        // Préparer les données pour l'export JSON
+        $export_data = [
+            'id' => $commande_data['id'],
+            'titre' => $commande_data['titre'],
+            'description' => $commande_data['description'],
+            'type_commande' => $commande_data['type_commande'],
+            'date_limite' => $commande_data['date_limite'],
+            'date_recuperation' => $commande_data['date_recuperation'],
+            'adresse_recuperation' => $commande_data['adresse_recuperation'],
+            'montant_total' => $commande_data['montant_total'],
+            'poids_total' => $commande_data['poids_total'],
+            'frais_port' => $commande_data['frais_port'],
+            'statut' => $commande_data['statut'],
+            'created_at' => $commande_data['created_at'],
+            'updated_at' => $commande_data['updated_at'],
+            'admin_id' => $commande_data['admin_id'],
+            'produits' => $commande_data['produits'],
+            'paliers_frais' => $commande_data['paliers_frais'],
+            'participants' => $commande_data['participants']
+        ];
+        
+        return json_encode($export_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        
+    } catch (Exception $e) {
+        error_log('Erreur exportCommandeJSON: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Importe une commande depuis un fichier JSON
+ * @param string $json_content Contenu JSON de la commande
+ * @param string $user_id ID de l'utilisateur qui importe
+ * @return string|null ID de la nouvelle commande ou null en cas d'erreur
+ */
+function importCommandeJSON($json_content, $user_id) {
+    try {
+        // Décoder le JSON
+        $data = json_decode($json_content, true);
+        if (!$data) {
+            throw new Exception('Format JSON invalide');
+        }
+        
+        // Vérifier les champs obligatoires
+        $required_fields = ['titre', 'type_commande', 'date_limite', 'date_recuperation', 'adresse_recuperation'];
+        foreach ($required_fields as $field) {
+            if (!isset($data[$field]) || empty($data[$field])) {
+                throw new Exception("Champ obligatoire manquant: $field");
+            }
+        }
+        
+        // Générer un nouvel ID pour éviter les conflits
+        $new_commande_id = generateUniqueId();
+        
+        // Insérer la commande principale
+        $stmt = getDB()->prepare("
+            INSERT INTO commandes (
+                id, titre, description, type_commande, date_limite, date_recuperation,
+                adresse_recuperation, montant_total, poids_total, frais_port, statut,
+                admin_id, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        ");
+        
+        $stmt->execute([
+            $new_commande_id,
+            $data['titre'],
+            $data['description'] ?? '',
+            $data['type_commande'],
+            $data['date_limite'],
+            $data['date_recuperation'],
+            $data['adresse_recuperation'],
+            $data['montant_total'] ?? 0,
+            $data['poids_total'] ?? 0,
+            $data['frais_port'] ?? 0,
+            $data['statut'] ?? 'active',
+            $user_id
+        ]);
+        
+        // Importer les produits
+        if (!empty($data['produits'])) {
+            foreach ($data['produits'] as $produit_data) {
+                $produit_id = generateUniqueId();
+                
+                $stmt = getDB()->prepare("
+                    INSERT INTO produits (id, commande_id, nom, url, created_at)
+                    VALUES (?, ?, ?, ?, NOW())
+                ");
+                
+                $stmt->execute([
+                    $produit_id,
+                    $new_commande_id,
+                    $produit_data['nom'],
+                    $produit_data['url'] ?? ''
+                ]);
+                
+                // Importer les variations du produit
+                if (!empty($produit_data['variations'])) {
+                    foreach ($produit_data['variations'] as $variation_data) {
+                        $variation_id = generateUniqueId();
+                        
+                        $stmt = getDB()->prepare("
+                            INSERT INTO variations (id, produit_id, nom, poids, prix, created_at)
+                            VALUES (?, ?, ?, ?, ?, NOW())
+                        ");
+                        
+                        $stmt->execute([
+                            $variation_id,
+                            $produit_id,
+                            $variation_data['nom'],
+                            $variation_data['poids'] ?? 0,
+                            $variation_data['prix'] ?? 0
+                        ]);
+                    }
+                }
+            }
+        }
+        
+        // Importer les paliers de frais
+        if (!empty($data['paliers_frais'])) {
+            foreach ($data['paliers_frais'] as $palier_data) {
+                $palier_id = generateUniqueId();
+                
+                $stmt = getDB()->prepare("
+                    INSERT INTO paliers_frais (id, commande_id, min_poids, max_poids, frais, created_at)
+                    VALUES (?, ?, ?, ?, ?, NOW())
+                ");
+                
+                $stmt->execute([
+                    $palier_id,
+                    $new_commande_id,
+                    $palier_data['min'] ?? 0,
+                    $palier_data['max'] ?? null,
+                    $palier_data['frais'] ?? 0
+                ]);
+            }
+        }
+        
+        // Importer les participants (sans les utilisateurs existants)
+        if (!empty($data['participants'])) {
+            foreach ($data['participants'] as $participant_data) {
+                // Vérifier si l'utilisateur existe
+                $user_exists = getUserData($participant_data['user_id']);
+                if ($user_exists) {
+                    $participant_id = generateUniqueId();
+                    
+                    $stmt = getDB()->prepare("
+                        INSERT INTO participants (
+                            id, commande_id, user_id, montant_produits, part_frais_port,
+                            montant_total, statut_paiement, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+                    ");
+                    
+                    $stmt->execute([
+                        $participant_id,
+                        $new_commande_id,
+                        $participant_data['user_id'],
+                        $participant_data['montant_produits'] ?? 0,
+                        $participant_data['part_frais_port'] ?? 0,
+                        $participant_data['montant_total'] ?? 0,
+                        $participant_data['statut_paiement'] ?? 0
+                    ]);
+                }
+            }
+        }
+        
+        return $new_commande_id;
+        
+    } catch (Exception $e) {
+        error_log('Erreur importCommandeJSON: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Ajoute un participant à une commande
+ * @param string $commande_id ID de la commande
+ * @param string $user_id ID de l'utilisateur
+ * @return bool Succès ou échec
+ */
+function addParticipant($commande_id, $user_id) {
+    try {
+        $pdo = getDB();
+        
+        // Vérifier si le participant existe déjà
+        if (isCommandeParticipant($commande_id, $user_id)) {
+            return true; // Déjà participant
+        }
+        
+        $participant_id = generateUniqueId();
+        $stmt = $pdo->prepare("
+            INSERT INTO " . DB_PREFIX . "participants 
+            (id, commande_id, user_id, montant_produits, part_frais_port, montant_total, statut_paiement, created_at) 
+            VALUES (?, ?, ?, 0.00, 0.00, 0.00, 0, NOW())
+        ");
+        
+        return $stmt->execute([$participant_id, $commande_id, $user_id]);
+    } catch (PDOException $e) {
+        error_log('Erreur addParticipant: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Récupère les données d'un participant pour une commande
+ * @param array $commande_data Données de la commande
+ * @param string $user_id ID de l'utilisateur
+ * @return array|null Données du participant ou null
+ */
+function getParticipantCommande($commande_data, $user_id) {
+    if (!isset($commande_data['participants'][$user_id])) {
+        return null;
+    }
+    return $commande_data['participants'][$user_id];
+}
+
+/**
+ * Ajoute ou met à jour un article commandé
+ * @param string $commande_id ID de la commande
+ * @param string $user_id ID de l'utilisateur
+ * @param string $variation_id ID de la variation
+ * @param int $quantite Quantité commandée
+ * @return bool Succès ou échec
+ */
+function addArticle($commande_id, $user_id, $variation_id, $quantite) {
+    try {
+        $pdo = getDB();
+        
+        // Récupérer l'ID du participant
+        $stmt = $pdo->prepare("
+            SELECT id FROM " . DB_PREFIX . "participants 
+            WHERE commande_id = ? AND user_id = ?
+        ");
+        $stmt->execute([$commande_id, $user_id]);
+        $participant = $stmt->fetch();
+        
+        if (!$participant) {
+            // Si le participant n'existe pas, l'ajouter automatiquement
+            if (!addParticipant($commande_id, $user_id)) {
+                return false; // Impossible d'ajouter le participant
+            }
+            
+            // Récupérer à nouveau l'ID du participant
+            $stmt = $pdo->prepare("
+                SELECT id FROM " . DB_PREFIX . "participants 
+                WHERE commande_id = ? AND user_id = ?
+            ");
+            $stmt->execute([$commande_id, $user_id]);
+            $participant = $stmt->fetch();
+            
+            if (!$participant) {
+                return false; // Toujours pas trouvé
+            }
+        }
+        
+        $participant_id = $participant['id'];
+        
+        // Vérifier si l'article existe déjà
+        $stmt = $pdo->prepare("
+            SELECT id FROM " . DB_PREFIX . "articles_commandes 
+            WHERE participant_id = ? AND variation_id = ?
+        ");
+        $stmt->execute([$participant_id, $variation_id]);
+        $existing = $stmt->fetch();
+        
+        $success = false;
+        if ($existing) {
+            // Mettre à jour la quantité
+            $stmt = $pdo->prepare("
+                UPDATE " . DB_PREFIX . "articles_commandes 
+                SET quantite = ?, updated_at = NOW() 
+                WHERE participant_id = ? AND variation_id = ?
+            ");
+            $success = $stmt->execute([$quantite, $participant_id, $variation_id]);
+        } else {
+            // Créer un nouvel article
+            $article_id = generateUniqueId();
+            $stmt = $pdo->prepare("
+                INSERT INTO " . DB_PREFIX . "articles_commandes 
+                (id, participant_id, variation_id, quantite, created_at) 
+                VALUES (?, ?, ?, ?, NOW())
+            ");
+            $success = $stmt->execute([$article_id, $participant_id, $variation_id, $quantite]);
+        }
+        
+        // Recalculer les montants du participant
+        if ($success) {
+            recalculateParticipantAmounts($commande_id, $user_id);
+        }
+        
+        return $success;
+    } catch (PDOException $e) {
+        error_log('Erreur addArticle: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Récupère les informations d'une variation
+ * @param array $commande_data Données de la commande
+ * @param string $variation_id ID de la variation
+ * @return array|null Informations de la variation ou null
+ */
+function getVariationInfo($commande_data, $variation_id) {
+    foreach ($commande_data['produits'] as $produit) {
+        foreach ($produit['variations'] as $variation) {
+            if ($variation['id'] === $variation_id) {
+                return [
+                    'produit_nom' => $produit['nom'],
+                    'variation_nom' => $variation['nom'],
+                    'poids' => $variation['poids'],
+                    'prix' => $variation['prix']
+                ];
+            }
+        }
+    }
+    return null;
+}
+
+/**
+ * Recalcule les montants d'un participant
+ * @param string $commande_id ID de la commande
+ * @param string $user_id ID de l'utilisateur
+ * @return bool Succès ou échec
+ */
+function recalculateParticipantAmounts($commande_id, $user_id) {
+    try {
+        $pdo = getDB();
+        
+        // Récupérer l'ID du participant
+        $stmt = $pdo->prepare("
+            SELECT id FROM " . DB_PREFIX . "participants 
+            WHERE commande_id = ? AND user_id = ?
+        ");
+        $stmt->execute([$commande_id, $user_id]);
+        $participant = $stmt->fetch();
+        
+        if (!$participant) {
+            return false;
+        }
+        
+        $participant_id = $participant['id'];
+        
+        // Calculer le montant des produits
+        $stmt = $pdo->prepare("
+            SELECT SUM(ac.quantite * v.prix) as montant_produits
+            FROM " . DB_PREFIX . "articles_commandes ac
+            JOIN " . DB_PREFIX . "variations v ON ac.variation_id = v.id
+            WHERE ac.participant_id = ?
+        ");
+        $stmt->execute([$participant_id]);
+        $result = $stmt->fetch();
+        $montant_produits = $result['montant_produits'] ?? 0;
+        
+        // Mettre à jour le montant des produits du participant
+        $stmt = $pdo->prepare("
+            UPDATE " . DB_PREFIX . "participants 
+            SET montant_produits = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$montant_produits, $participant_id]);
+        
+        // Recalculer tous les totaux de la commande (inclut la répartition des frais)
+        return recalculateCommandeTotals($commande_id);
+    } catch (PDOException $e) {
+        error_log('Erreur recalculateParticipantAmounts: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Met à jour le statut de paiement d'un participant
+ * @param string $commande_id ID de la commande
+ * @param string $user_id ID de l'utilisateur
+ * @param bool $statut_paiement Nouveau statut de paiement
+ * @return bool Succès ou échec
+ */
+function updatePaiementStatus($commande_id, $user_id, $statut_paiement) {
+    try {
+        $pdo = getDB();
+        
+        $stmt = $pdo->prepare("
+            UPDATE " . DB_PREFIX . "participants 
+            SET statut_paiement = ?, updated_at = NOW()
+            WHERE commande_id = ? AND user_id = ?
+        ");
+        
+        return $stmt->execute([$statut_paiement ? 1 : 0, $commande_id, $user_id]);
+    } catch (PDOException $e) {
+        error_log('Erreur updatePaiementStatus: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Calcule les frais de port selon les paliers définis
+ * @param string $commande_id ID de la commande
+ * @param string $type_commande Type de commande (poids, nombre, montant)
+ * @param float $valeur Valeur à évaluer
+ * @return float Frais de port calculés
+ */
+function calculateFraisPort($commande_id, $type_commande, $valeur) {
+    try {
+        $pdo = getDB();
+        
+        // Trouver le palier correspondant
+        $stmt = $pdo->prepare("
+            SELECT frais 
+            FROM " . DB_PREFIX . "paliers_frais 
+            WHERE commande_id = ? 
+            AND ? >= min_value 
+            AND (max_value IS NULL OR ? < max_value)
+            ORDER BY min_value DESC 
+            LIMIT 1
+        ");
+        $stmt->execute([$commande_id, $valeur, $valeur]);
+        $result = $stmt->fetch();
+        
+        return $result ? (float) $result['frais'] : 0.0;
+    } catch (PDOException $e) {
+        error_log('Erreur calculateFraisPort: ' . $e->getMessage());
+        return 0.0;
+    }
+}
+
+/**
+ * Recalcule tous les totaux d'une commande
+ * @param string $commande_id ID de la commande
+ * @return bool Succès ou échec
+ */
+function recalculateCommandeTotals($commande_id) {
+    try {
+        $pdo = getDB();
+        
+        // Récupérer les données de la commande
+        $stmt = $pdo->prepare("SELECT type_commande FROM " . DB_PREFIX . "commandes WHERE id = ?");
+        $stmt->execute([$commande_id]);
+        $commande = $stmt->fetch();
+        
+        if (!$commande) {
+            return false;
+        }
+        
+        $type_commande = $commande['type_commande'];
+        
+        // Calculer les totaux selon le type de commande
+        if ($type_commande === 'poids') {
+            // Calculer le poids total
+        $stmt = $pdo->prepare("
+                SELECT SUM(ac.quantite * v.poids) as poids_total
+                FROM " . DB_PREFIX . "articles_commandes ac
+                JOIN " . DB_PREFIX . "variations v ON ac.variation_id = v.id
+                JOIN " . DB_PREFIX . "participants p ON ac.participant_id = p.id
+                WHERE p.commande_id = ?
+            ");
+            $stmt->execute([$commande_id]);
+            $result = $stmt->fetch();
+            $valeur_totale = $result['poids_total'] ?? 0;
+            
+        } elseif ($type_commande === 'nombre') {
+            // Calculer le nombre total d'articles
+            $stmt = $pdo->prepare("
+                SELECT SUM(ac.quantite) as nombre_total
+                FROM " . DB_PREFIX . "articles_commandes ac
+                JOIN " . DB_PREFIX . "participants p ON ac.participant_id = p.id
+                WHERE p.commande_id = ?
+            ");
+            $stmt->execute([$commande_id]);
+            $result = $stmt->fetch();
+            $valeur_totale = $result['nombre_total'] ?? 0;
+            
+        } else { // montant
+            // Calculer le montant total des produits
+            $stmt = $pdo->prepare("
+                SELECT SUM(ac.quantite * v.prix) as montant_total
+                FROM " . DB_PREFIX . "articles_commandes ac
+                JOIN " . DB_PREFIX . "variations v ON ac.variation_id = v.id
+                JOIN " . DB_PREFIX . "participants p ON ac.participant_id = p.id
+                WHERE p.commande_id = ?
+            ");
+            $stmt->execute([$commande_id]);
+            $result = $stmt->fetch();
+            $valeur_totale = $result['montant_total'] ?? 0;
+        }
+        
+        // Calculer les frais de port
+        $frais_port = calculateFraisPort($commande_id, $type_commande, $valeur_totale);
+        
+        // Calculer le montant total des produits
+        $stmt = $pdo->prepare("
+            SELECT SUM(ac.quantite * v.prix) as montant_produits
+            FROM " . DB_PREFIX . "articles_commandes ac
+            JOIN " . DB_PREFIX . "variations v ON ac.variation_id = v.id
+            JOIN " . DB_PREFIX . "participants p ON ac.participant_id = p.id
+            WHERE p.commande_id = ?
+        ");
+        $stmt->execute([$commande_id]);
+        $result = $stmt->fetch();
+        $montant_total = $result['montant_produits'] ?? 0;
+        
+        // Calculer le poids total
+        $stmt = $pdo->prepare("
+            SELECT SUM(ac.quantite * v.poids) as poids_total
+            FROM " . DB_PREFIX . "articles_commandes ac
+            JOIN " . DB_PREFIX . "variations v ON ac.variation_id = v.id
+            JOIN " . DB_PREFIX . "participants p ON ac.participant_id = p.id
+            WHERE p.commande_id = ?
+        ");
+        $stmt->execute([$commande_id]);
+        $result = $stmt->fetch();
+        $poids_total = $result['poids_total'] ?? 0;
+        
+        // Mettre à jour la commande
+        $stmt = $pdo->prepare("
+            UPDATE " . DB_PREFIX . "commandes 
+            SET montant_total = ?, poids_total = ?, frais_port = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$montant_total, $poids_total, $frais_port, $commande_id]);
+        
+        // Recalculer les montants de tous les participants
+        recalculateAllParticipantsAmounts($commande_id);
+        
+        return true;
+    } catch (PDOException $e) {
+        error_log('Erreur recalculateCommandeTotals: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Recalcule les montants de tous les participants d'une commande
+ * @param string $commande_id ID de la commande
+ * @return bool Succès ou échec
+ */
+function recalculateAllParticipantsAmounts($commande_id) {
+    try {
+        $pdo = getDB();
+        
+        // Récupérer les frais de port et le montant total de la commande
+        $stmt = $pdo->prepare("SELECT frais_port, montant_total FROM " . DB_PREFIX . "commandes WHERE id = ?");
+        $stmt->execute([$commande_id]);
+        $commande = $stmt->fetch();
+        
+        if (!$commande) {
+            return false;
+        }
+        
+        $frais_port_total = $commande['frais_port'];
+        $montant_total_commande = $commande['montant_total'];
+        
+        // Récupérer tous les participants
+        $stmt = $pdo->prepare("
+            SELECT id, user_id 
+            FROM " . DB_PREFIX . "participants 
+            WHERE commande_id = ?
+        ");
+        $stmt->execute([$commande_id]);
+        $participants = $stmt->fetchAll();
+        
+        // Mettre à jour chaque participant
+        foreach ($participants as $participant) {
+            // Recalculer le montant des produits pour ce participant
+            $stmt = $pdo->prepare("
+                SELECT SUM(ac.quantite * v.prix) as montant_produits
+                FROM " . DB_PREFIX . "articles_commandes ac
+                JOIN " . DB_PREFIX . "variations v ON ac.variation_id = v.id
+                WHERE ac.participant_id = ?
+            ");
+            $stmt->execute([$participant['id']]);
+        $result = $stmt->fetch();
+            $montant_produits = $result['montant_produits'] ?? 0;
+            
+            // Calculer la part des frais de port proportionnellement
+            $part_frais_port = 0;
+            if ($montant_total_commande > 0) {
+                $part_frais_port = ($frais_port_total * $montant_produits) / $montant_total_commande;
+            }
+            
+        $montant_total = $montant_produits + $part_frais_port;
+        
+        // Mettre à jour le participant
+        $stmt = $pdo->prepare("
+            UPDATE " . DB_PREFIX . "participants 
+            SET montant_produits = ?, part_frais_port = ?, montant_total = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+            $stmt->execute([$montant_produits, $part_frais_port, $montant_total, $participant['id']]);
+        }
+        
+        return true;
+    } catch (PDOException $e) {
+        error_log('Erreur recalculateAllParticipantsAmounts: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Ajoute un produit à une commande
+ * @param string $commande_id ID de la commande
+ * @param string $nom_produit Nom du produit
+ * @param array $variations Liste des variations
+ * @param string $url_produit URL du produit (optionnel)
+ * @return bool Succès ou échec
+ */
+function addProduit($commande_id, $nom_produit, $variations, $url_produit = null) {
+    try {
+        $pdo = getDB();
+        $pdo->beginTransaction();
+        
+        // Insérer le produit
+        $produit_id = generateUniqueId();
+        $stmt = $pdo->prepare("
+            INSERT INTO " . DB_PREFIX . "produits (id, commande_id, nom, url) 
+            VALUES (?, ?, ?, ?)
+        ");
+        $stmt->execute([$produit_id, $commande_id, $nom_produit, $url_produit]);
+        
+        // Insérer les variations
+        foreach ($variations as $variation) {
+            $variation_id = $variation['id'] ?? generateUniqueId();
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO " . DB_PREFIX . "variations (id, produit_id, nom, poids, prix) 
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([
+                $variation_id,
+                $produit_id,
+                $variation['nom'],
+                $variation['poids'],
+                $variation['prix']
+            ]);
+        }
+        
+        $pdo->commit();
+        return true;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log('Erreur addProduit: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Supprime un produit d'une commande
+ * @param string $commande_id ID de la commande
+ * @param string $produit_id ID du produit
+ * @return bool Succès ou échec
+ */
+function deleteProduit($commande_id, $produit_id) {
+    try {
+        $pdo = getDB();
+        $pdo->beginTransaction();
+        
+        // Supprimer les articles commandés liés aux variations de ce produit
+        $stmt = $pdo->prepare("
+            DELETE ac FROM " . DB_PREFIX . "articles_commandes ac
+            JOIN " . DB_PREFIX . "variations v ON ac.variation_id = v.id
+            WHERE v.produit_id = ?
+        ");
+        $stmt->execute([$produit_id]);
+        
+        // Supprimer les variations
+        $stmt = $pdo->prepare("DELETE FROM " . DB_PREFIX . "variations WHERE produit_id = ?");
+        $stmt->execute([$produit_id]);
+        
+        // Supprimer le produit
+        $stmt = $pdo->prepare("DELETE FROM " . DB_PREFIX . "produits WHERE id = ? AND commande_id = ?");
+        $stmt->execute([$produit_id, $commande_id]);
+        
+        $pdo->commit();
+        
+        // Recalculer les totaux
+        recalculateCommandeTotals($commande_id);
+        
+        return true;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log('Erreur deleteProduit: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Supprime une variation d'un produit
+ * @param string $commande_id ID de la commande
+ * @param string $produit_id ID du produit
+ * @param string $variation_id ID de la variation
+ * @return bool Succès ou échec
+ */
+function deleteVariation($commande_id, $produit_id, $variation_id) {
+    try {
+        $pdo = getDB();
+        $pdo->beginTransaction();
+        
+        // Supprimer les articles commandés liés à cette variation
+        $stmt = $pdo->prepare("DELETE FROM " . DB_PREFIX . "articles_commandes WHERE variation_id = ?");
+        $stmt->execute([$variation_id]);
+        
+        // Supprimer la variation
+        $stmt = $pdo->prepare("DELETE FROM " . DB_PREFIX . "variations WHERE id = ? AND produit_id = ?");
+        $stmt->execute([$variation_id, $produit_id]);
+        
+        $pdo->commit();
+        
+        // Recalculer les totaux
+        recalculateCommandeTotals($commande_id);
+        
+        return true;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log('Erreur deleteVariation: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Met à jour les dates d'une commande
+ * @param string $commande_id ID de la commande
+ * @param string $date_limite Nouvelle date limite
+ * @param string $date_recuperation Nouvelle date de récupération
+ * @return bool Succès ou échec
+ */
+function updateCommandeDates($commande_id, $date_limite, $date_recuperation) {
+    try {
+        $pdo = getDB();
+        
+        $stmt = $pdo->prepare("
+            UPDATE " . DB_PREFIX . "commandes 
+            SET date_limite = ?, date_recuperation = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        
+        return $stmt->execute([$date_limite, $date_recuperation, $commande_id]);
+    } catch (PDOException $e) {
+        error_log('Erreur updateCommandeDates: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Met à jour la description d'une commande
+ * @param string $commande_id ID de la commande
+ * @param string $description Nouvelle description
+ * @return bool Succès ou échec
+ */
+function updateCommandeDescription($commande_id, $description) {
+    try {
+        $pdo = getDB();
+        
+        $stmt = $pdo->prepare("
+            UPDATE " . DB_PREFIX . "commandes 
+            SET description = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        
+        return $stmt->execute([$description, $commande_id]);
+    } catch (PDOException $e) {
+        error_log('Erreur updateCommandeDescription: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Met à jour le statut public d'une commande
+ * @param string $commande_id ID de la commande
+ * @param bool $is_public Nouveau statut public
+ * @return bool Succès ou échec
+ */
+function updateCommandePublicStatus($commande_id, $is_public) {
+    try {
+        $pdo = getDB();
+        
+        $stmt = $pdo->prepare("
+            UPDATE " . DB_PREFIX . "commandes 
+            SET public = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        
+        return $stmt->execute([$is_public ? 1 : 0, $commande_id]);
+    } catch (PDOException $e) {
+        error_log('Erreur updateCommandePublicStatus: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Duplique une commande
+ * @param string $commande_id ID de la commande à dupliquer
+ * @param string $user_id ID de l'utilisateur qui duplique
+ * @return string|null ID de la nouvelle commande ou null si échec
+ */
+function duplicateCommande($commande_id, $user_id) {
+    try {
+        $commande_data = getCommandeData($commande_id);
+        if (!$commande_data) {
+            return null;
+        }
+        
+        // Créer une nouvelle commande avec les mêmes données
+        $new_commande_id = createCommande(
+            $user_id,
+            $commande_data['titre'] . ' (Copie)',
+            $commande_data['type_commande'],
+            $commande_data['date_limite'],
+            $commande_data['date_recuperation'],
+            $commande_data['adresse_recuperation'],
+            $commande_data['paliers_frais'],
+            $commande_data['produits']
+        );
+        
+        // Mettre à jour la description si elle existe
+        if (!empty($commande_data['description'])) {
+            updateCommandeDescription($new_commande_id, $commande_data['description']);
+        }
+        
+        return $new_commande_id;
+    } catch (Exception $e) {
+        error_log('Erreur duplicateCommande: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Envoie un rappel aux participants d'une commande
+ * @param string $commande_id ID de la commande
+ * @return bool Succès ou échec
+ */
+function envoyerRappel($commande_id) {
+    try {
+        $commande_data = getCommandeData($commande_id);
+        if (!$commande_data) {
+            return false;
+        }
+        
+        $admin_data = getUserData($commande_data['admin_id']);
+        $admin_name = $admin_data ? $admin_data['prenom'] . ' ' . $admin_data['nom'] : 'Administrateur';
+        
+        $subject = APP_NAME . ' - Rappel pour la commande: ' . $commande_data['titre'];
+        $commande_url = APP_URL . '/commande.php?id=' . $commande_id;
+        
+        $success_count = 0;
+        foreach ($commande_data['participants'] as $participant) {
+            $user_data = getUserData($participant['user_id']);
+            if ($user_data) {
+                $message = "<html><body>";
+                $message .= "<h1>Rappel - Commande: " . htmlspecialchars($commande_data['titre']) . "</h1>";
+                $message .= "<p>Bonjour " . htmlspecialchars($user_data['prenom']) . ",</p>";
+                $message .= "<p>Ceci est un rappel pour la commande groupée organisée par " . htmlspecialchars($admin_name) . ".</p>";
+                $message .= "<p><strong>Date limite:</strong> " . formatDate($commande_data['date_limite']) . "</p>";
+                $message .= "<p><strong>Date de récupération:</strong> " . formatDate($commande_data['date_recuperation']) . "</p>";
+                $message .= "<p><strong>Adresse de récupération:</strong> " . htmlspecialchars($commande_data['adresse_recuperation']) . "</p>";
+                $message .= "<p>Vous pouvez consulter et modifier votre commande en cliquant sur le lien suivant:</p>";
+                $message .= "<p><a href='" . $commande_url . "'>" . $commande_url . "</a></p>";
+                $message .= "<p>Cordialement,<br>" . htmlspecialchars($admin_name) . "</p>";
+                $message .= "</body></html>";
+                
+                if (sendEmail($user_data['email'], $subject, $message)) {
+                    $success_count++;
+                }
+            }
+        }
+        
+        return $success_count > 0;
+    } catch (Exception $e) {
+        error_log('Erreur envoyerRappel: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Envoie les informations de récupération aux participants
+ * @param string $commande_id ID de la commande
+ * @return bool Succès ou échec
+ */
+function envoyerInfosRecuperation($commande_id) {
+    try {
+        $commande_data = getCommandeData($commande_id);
+        if (!$commande_data) {
+            return false;
+        }
+        
+        $admin_data = getUserData($commande_data['admin_id']);
+        $admin_name = $admin_data ? $admin_data['prenom'] . ' ' . $admin_data['nom'] : 'Administrateur';
+        
+        $subject = APP_NAME . ' - Informations de récupération: ' . $commande_data['titre'];
+        
+        $success_count = 0;
+        foreach ($commande_data['participants'] as $participant) {
+            $user_data = getUserData($participant['user_id']);
+            if ($user_data) {
+                $message = "<html><body>";
+                $message .= "<h1>Informations de récupération</h1>";
+                $message .= "<p>Bonjour " . htmlspecialchars($user_data['prenom']) . ",</p>";
+                $message .= "<p>Voici les informations pour récupérer votre commande:</p>";
+                $message .= "<h2>Commande: " . htmlspecialchars($commande_data['titre']) . "</h2>";
+                $message .= "<p><strong>Date de récupération:</strong> " . formatDate($commande_data['date_recuperation']) . "</p>";
+                $message .= "<p><strong>Adresse de récupération:</strong><br>" . nl2br(htmlspecialchars($commande_data['adresse_recuperation'])) . "</p>";
+                $message .= "<h3>Votre commande:</h3>";
+                $message .= "<p><strong>Montant des produits:</strong> " . number_format($participant['montant_produits'], 2, ',', ' ') . " €</p>";
+                $message .= "<p><strong>Part des frais de port:</strong> " . number_format($participant['part_frais_port'], 2, ',', ' ') . " €</p>";
+                $message .= "<p><strong>Total à payer:</strong> " . number_format($participant['montant_total'], 2, ',', ' ') . " €</p>";
+                $message .= "<p><strong>Statut de paiement:</strong> " . ($participant['statut_paiement'] ? 'Payé' : 'Non payé') . "</p>";
+                $message .= "<p>Cordialement,<br>" . htmlspecialchars($admin_name) . "</p>";
+                $message .= "</body></html>";
+                
+                if (sendEmail($user_data['email'], $subject, $message)) {
+                    $success_count++;
+                }
+            }
+        }
+        
+        return $success_count > 0;
+    } catch (Exception $e) {
+        error_log('Erreur envoyerInfosRecuperation: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Récupère les paliers de frais d'une commande
+ * @param string $commande_id ID de la commande
+ * @return array Liste des paliers
+ */
+function getCommandePaliers($commande_id) {
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare("
+            SELECT min_value, max_value, frais 
+            FROM " . DB_PREFIX . "paliers_frais 
+            WHERE commande_id = ? 
+            ORDER BY min_value ASC
+        ");
+        $stmt->execute([$commande_id]);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Erreur getCommandePaliers: ' . $e->getMessage());
+        return [];
+    }
 }
 ?>

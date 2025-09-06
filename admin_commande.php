@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/lang.php';
+require_once 'includes/auth.php';
 require_once 'includes/header.php';
 
 // Vérifier si l'ID de commande est fourni
@@ -185,36 +186,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Action : Exporter la commande en JSON
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'export_json') {
+    // Nettoyer le buffer de sortie
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     $json_data = exportCommandeJSON($commande_id);
     if ($json_data) {
         $filename = 'commande_' . $commande_id . '_' . date('Ymd_His') . '.json';
-        $file_path = 'data/exports/' . $filename;
         
-        if (file_put_contents($file_path, $json_data)) {
-            header('Content-Type: application/json');
-            header('Content-Disposition: attachment; filename="' . $filename . '"');
-            header('Content-Length: ' . strlen($json_data));
-            echo $json_data;
-            exit;
-        } else {
-            $errors[] = 'Erreur lors de l\'enregistrement du fichier JSON.';
-        }
+        // Headers pour le JSON
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . strlen($json_data));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        
+        // Envoyer le fichier JSON
+        echo $json_data;
+        exit;
     } else {
-        $errors[] = 'Erreur lors de l\'export de la commande.';
+        // Erreur - rediriger avec message
+        $_SESSION['flash_message'] = 'Erreur lors de la génération du JSON.';
+        $_SESSION['flash_type'] = 'danger';
+        header('Location: admin_commande.php?id=' . $commande_id);
+        exit;
     }
 }
 
 // Action : Générer un PDF
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'generate_pdf') {
+    // Nettoyer le buffer de sortie
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     $pdf_path = generateCommandePDF($commande_id);
-    if ($pdf_path) {
+    if ($pdf_path && file_exists($pdf_path)) {
         $filename = basename($pdf_path);
-        header('Content-Type: text/html');
+        
+        // Headers pour le PDF
+        header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($pdf_path));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        
+        // Envoyer le fichier PDF
         readfile($pdf_path);
+        
+        // Supprimer le fichier temporaire
+        unlink($pdf_path);
+        
         exit;
     } else {
-        $errors[] = 'Erreur lors de la génération du PDF.';
+        // Erreur - rediriger avec message
+        $_SESSION['flash_message'] = 'Erreur lors de la génération du PDF. Vérifiez que TCPDF est installé.';
+        $_SESSION['flash_type'] = 'danger';
+        header('Location: admin_commande.php?id=' . $commande_id);
+        exit;
     }
 }
 
@@ -330,6 +360,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 </div>
                 
                 <div class="mb-3">
+                    <strong><?php echo __('shipping_tiers'); ?>:</strong>
+                    <?php 
+                    $paliers = getCommandePaliers($commande_id);
+                    if (!empty($paliers)):
+                    ?>
+                    <div class="mt-2">
+                        <?php foreach ($paliers as $palier): ?>
+                        <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                            <span>
+                                <?php 
+                                if ($palier['max_value'] === null) {
+                                    echo '≥ ' . number_format($palier['min_value'], 2, ',', ' ');
+                                } else {
+                                    echo number_format($palier['min_value'], 2, ',', ' ') . ' - ' . number_format($palier['max_value'], 2, ',', ' ');
+                                }
+                                
+                                // Ajouter l'unité selon le type de commande
+                                switch ($commande_data['type_commande']) {
+                                    case 'poids':
+                                        echo ' kg';
+                                        break;
+                                    case 'nombre':
+                                        echo ' articles';
+                                        break;
+                                    case 'montant':
+                                        echo ' €';
+                                        break;
+                                }
+                                ?>
+                            </span>
+                            <span class="badge bg-primary"><?php echo number_format($palier['frais'], 2, ',', ' '); ?> €</span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="text-muted mt-2"><?php echo __('no_shipping_tiers'); ?></div>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="mb-3">
                     <strong><?php echo __('visibility'); ?>:</strong>
                     <form method="post" action="" class="d-inline ms-2">
                         <input type="hidden" name="action" value="update_public_status">
@@ -372,20 +442,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         </button>
                     </form>
                     
-                    <div class="btn-group mb-2">
-                        <form method="post" action="" class="w-50">
-                            <input type="hidden" name="action" value="export_json">
-                            <button type="submit" class="btn btn-secondary w-100">
-                                <i class="fas fa-file-code"></i> <?php echo __('export_json'); ?>
-                            </button>
-                        </form>
-                        <form method="post" action="" class="w-50">
-                            <input type="hidden" name="action" value="duplicate_order">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-copy"></i> <?php echo __('duplicate_order'); ?>
-                            </button>
-                        </form>
-                    </div>
+                    <form method="post" action="" class="mb-2">
+                        <input type="hidden" name="action" value="export_json">
+                        <button type="submit" class="btn btn-info w-100">
+                            <i class="fas fa-file-code"></i> <?php echo __('export_json'); ?>
+                        </button>
+                    </form>
+                    
+                    <form method="post" action="" class="mb-2">
+                        <input type="hidden" name="action" value="duplicate_order">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-copy"></i> <?php echo __('duplicate_order'); ?>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -776,7 +845,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <div class="mb-3">
                         <label for="description" class="form-label"><?php echo __('description'); ?></label>
                         <textarea class="form-control" id="description" name="description" rows="5"><?php echo isset($commande_data['description']) ? htmlspecialchars($commande_data['description']) : ''; ?></textarea>
-                        <small class="form-text text-muted"><?php echo __('order_description_description'); ?></small>
                     </div>
                 </div>
                 

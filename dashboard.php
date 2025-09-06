@@ -1,6 +1,7 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/lang.php';
+require_once 'includes/auth.php';
 require_once 'includes/header.php';
 $page_title = __('dashboard');
 
@@ -10,25 +11,42 @@ requireLogin();
 $user_id = getCurrentUserId();
 $user_data = getCurrentUser();
 
-// Récupérer les commandes admin
-$commandes_admin = [];
-if (!empty($user_data['commandes_admin'])) {
-    foreach ($user_data['commandes_admin'] as $commande_id) {
-        $commande_data = getCommandeData($commande_id);
-        if ($commande_data) {
-            $commandes_admin[] = $commande_data;
+// Traitement de la suppression de commande
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_commande') {
+    $commande_id = $_POST['commande_id'] ?? '';
+    
+    if (!empty($commande_id)) {
+        if (deleteCommande($commande_id, $user_id)) {
+            $_SESSION['flash_message'] = __('order_deleted_successfully');
+            $_SESSION['flash_type'] = 'success';
+        } else {
+            $_SESSION['flash_message'] = __('error_deleting_order');
+            $_SESSION['flash_type'] = 'danger';
         }
+        
+        // Rediriger pour éviter la resoumission du formulaire
+        header('Location: dashboard.php');
+        exit;
+    }
+}
+
+// Récupérer les commandes admin
+$commandes_admin_raw = getUserCommandesAdmin($user_id);
+$commandes_admin = [];
+foreach ($commandes_admin_raw as $commande_raw) {
+    $commande_data = getCommandeData($commande_raw['id']);
+    if ($commande_data) {
+        $commandes_admin[] = $commande_data;
     }
 }
 
 // Récupérer les commandes participant
+$commandes_participant_raw = getUserCommandesParticipant($user_id);
 $commandes_participant = [];
-if (!empty($user_data['commandes_participant'])) {
-    foreach ($user_data['commandes_participant'] as $commande_id) {
-        $commande_data = getCommandeData($commande_id);
-        if ($commande_data) {
-            $commandes_participant[] = $commande_data;
-        }
+foreach ($commandes_participant_raw as $commande_raw) {
+    $commande_data = getCommandeData($commande_raw['id']);
+    if ($commande_data) {
+        $commandes_participant[] = $commande_data;
     }
 }
 
@@ -52,6 +70,16 @@ usort($commandes_participant, function($a, $b) {
 
 <h1 class="mb-4"><?php echo __('dashboard'); ?></h1>
 
+<?php if (isset($_SESSION['flash_message'])): ?>
+<div class="alert alert-<?php echo $_SESSION['flash_type']; ?> alert-dismissible fade show">
+    <?php echo htmlspecialchars($_SESSION['flash_message']); ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<?php 
+unset($_SESSION['flash_message']);
+unset($_SESSION['flash_type']);
+endif; ?>
+
 <div class="row dashboard-stats">
     <div class="col-md-4 text-center">
         <h3><?php echo count($commandes_admin); ?></h3>
@@ -62,7 +90,7 @@ usort($commandes_participant, function($a, $b) {
         <p><?php echo __('orders_joined'); ?></p>
     </div>
     <div class="col-md-4 text-center">
-        <h3><?php echo count($user_data['historique_commandes'] ?? []); ?></h3>
+        <h3>0</h3>
         <p><?php echo __('orders_completed'); ?></p>
     </div>
 </div>
@@ -122,6 +150,10 @@ usort($commandes_participant, function($a, $b) {
                     <a href="/commande.php?id=<?php echo $commande['id']; ?>" class="btn btn-outline-secondary btn-sm">
                         <i class="fas fa-eye"></i> <?php echo __('view'); ?>
                     </a>
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            onclick="confirmDeleteCommande('<?php echo $commande['id']; ?>', '<?php echo htmlspecialchars($commande['titre']); ?>')">
+                        <i class="fas fa-trash"></i> <?php echo __('delete'); ?>
+                    </button>
                 </div>
             </div>
         </div>
@@ -231,5 +263,20 @@ usort($commandes_participant, function($a, $b) {
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
+
+<!-- Formulaire caché pour la suppression -->
+<form id="delete-form" method="post" action="" style="display: none;">
+    <input type="hidden" name="action" value="delete_commande">
+    <input type="hidden" name="commande_id" id="delete-commande-id">
+</form>
+
+<script>
+function confirmDeleteCommande(commandeId, commandeTitre) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer la commande "' + commandeTitre + '" ?\n\nCette action est irréversible et supprimera :\n- Tous les produits et variations\n- Tous les participants et leurs commandes\n- Tous les paliers de frais\n- La commande elle-même')) {
+        document.getElementById('delete-commande-id').value = commandeId;
+        document.getElementById('delete-form').submit();
+    }
+}
+</script>
 
 <?php require_once 'includes/footer.php'; ?>

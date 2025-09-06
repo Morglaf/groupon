@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $date_limite = $_POST['date_limite'] ?? '';
     $date_recuperation = $_POST['date_recuperation'] ?? '';
     $adresse_recuperation = trim($_POST['adresse_recuperation'] ?? '');
+    $description = trim($_POST['description'] ?? '');
     
     // Valider les données
     if (empty($titre)) {
@@ -134,6 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $date_limite,
             $date_recuperation,
             $adresse_recuperation,
+            $description,
             $paliers,
             $produits
         );
@@ -197,6 +199,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="mb-3">
                 <label for="adresse_recuperation" class="form-label"><?php echo __('pickup_address'); ?></label>
                 <textarea class="form-control" id="adresse_recuperation" name="adresse_recuperation" rows="2" required></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label"><?php echo __('description'); ?></label>
+                <textarea class="form-control" id="description" name="description" rows="3" placeholder="<?php echo __('order_description_placeholder'); ?>"></textarea>
+                <div class="form-text"><?php echo __('order_description_help'); ?></div>
             </div>
         </div>
     </div>

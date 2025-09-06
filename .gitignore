@@ -28,7 +28,6 @@ Thumbs.db
 .env
 
 # Dépendances
-vendor/
 node_modules/
 
 # Fichiers de logs
@@ -41,6 +40,6 @@ logs/
 *.swp
 *.swo
 *~
-
+.netrc
 # Fichiers de cache
 .cache/ 

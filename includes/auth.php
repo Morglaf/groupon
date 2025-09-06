@@ -1,6 +1,6 @@
 <?php
 require_once 'config.php';
-require_once 'functions.php';
+require_once 'functions_mysql.php';
 
 /**
  * Vérifie si l'utilisateur est connecté

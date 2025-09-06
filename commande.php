@@ -183,6 +183,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ?>
                 </div>
                 
+                <div class="mb-3">
+                    <strong><?php echo __('shipping_tiers'); ?>:</strong>
+                    <?php 
+                    $paliers = getCommandePaliers($commande_id);
+                    if (!empty($paliers)):
+                    ?>
+                    <div class="mt-2">
+                        <?php foreach ($paliers as $palier): ?>
+                        <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                            <span>
+                                <?php 
+                                if ($palier['max_value'] === null) {
+                                    echo '≥ ' . number_format($palier['min_value'], 2, ',', ' ');
+                                } else {
+                                    echo number_format($palier['min_value'], 2, ',', ' ') . ' - ' . number_format($palier['max_value'], 2, ',', ' ');
+                                }
+                                
+                                // Ajouter l'unité selon le type de commande
+                                switch ($commande_data['type_commande']) {
+                                    case 'poids':
+                                        echo ' kg';
+                                        break;
+                                    case 'nombre':
+                                        echo ' articles';
+                                        break;
+                                    case 'montant':
+                                        echo ' €';
+                                        break;
+                                }
+                                ?>
+                            </span>
+                            <span class="badge bg-primary"><?php echo number_format($palier['frais'], 2, ',', ' '); ?> €</span>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="text-muted mt-2"><?php echo __('no_shipping_tiers'); ?></div>
+                    <?php endif; ?>
+                </div>
+                
                 <?php if (!isLoggedIn()): ?>
                 <hr>
                 <div class="alert alert-info">

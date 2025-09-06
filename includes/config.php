@@ -9,10 +9,8 @@ define('APP_NAME', 'Groupon');
 // URL de base de l'application (sans slash final)
 define('APP_URL', 'http://localhost');
 
-// Chemin vers le dossier de données (pour compatibilité, mais plus utilisé)
+// Chemin vers le dossier de données (pour les exports uniquement)
 define('DATA_DIR', __DIR__ . '/../data');
-define('USERS_DIR', DATA_DIR . '/users');
-define('COMMANDES_DIR', DATA_DIR . '/commandes');
 define('LANGS_DIR', __DIR__ . '/../langs');
 
 // Langue par défaut
@@ -33,6 +31,9 @@ require_once __DIR__ . '/database.php';
 
 // Charger les fonctions MySQL
 require_once __DIR__ . '/functions_mysql.php';
+
+// Charger la configuration TCPDF pour l'export PDF
+require_once __DIR__ . '/tcpdf_config.php';
 
 // Configuration de Cloudflare Turnstile
 define('USE_TURNSTILE', false); // Mettre à true pour activer Turnstile
@@ -59,18 +60,15 @@ define('LOCK_TIMEOUT', 10);
  * Ne pas modifier ci-dessous
  */
 
-// Vérifier si le dossier de données existe, sinon le créer
+// Vérifier si le dossier de données existe, sinon le créer (pour les exports uniquement)
 if (!file_exists(DATA_DIR)) {
     mkdir(DATA_DIR, 0755, true);
 }
 
-// Sous-dossiers de données
-$data_subdirs = ['exports', 'users', 'commandes'];
-foreach ($data_subdirs as $subdir) {
-    $path = DATA_DIR . '/' . $subdir;
-    if (!file_exists($path)) {
-        mkdir($path, 0755, true);
-    }
+// Créer le dossier exports si nécessaire
+$exports_dir = DATA_DIR . '/exports';
+if (!file_exists($exports_dir)) {
+    mkdir($exports_dir, 0755, true);
 }
 
 // Démarrage de session si nécessaire
