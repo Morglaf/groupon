@@ -1,4 +1,4 @@
-# Dokumentation des Groupon-Projekts
+# Groupon - Gruppenbestellungs-Anwendung
 
 ## 📝 Inhaltsverzeichnis
 - [Überblick](#überblick)
@@ -28,7 +28,7 @@ Dieses Projekt ist eine von Groupon inspirierte Plattform zur Verwaltung von Gru
 - HTML5/CSS3
 - REST API
 - Bootstrap
-- JSON-Datenspeicherung
+- MySQL - Relationale Datenbank
 
 ## Installation
 1. Repository klonen
@@ -43,7 +43,7 @@ Dieses Projekt ist eine von Groupon inspirierte Plattform zur Verwaltung von Gru
 
 ### Datenspeicherkonfiguration
 1. Stellen Sie sicher, dass die Ordner `data/users`, `data/commandes` und `data/exports` existieren und beschreibbar sind
-2. Es wird keine SQL-Datenbank benötigt, alle Daten werden in JSON-Dateien gespeichert
+2. Konfigurieren Sie Ihre MySQL-Datenbank und greifen Sie auf install.php für die automatische Installation zu
 
 Weitere Details zur Konfiguration finden Sie im [detaillierten Konfigurationshandbuch](CONFIGURATION.md).
 

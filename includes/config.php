@@ -111,13 +111,5 @@ if (file_exists($lang_file)) {
     include LANGS_DIR . "/fr.php";
 }
 
-/**
- * Fonction de traduction
- * @param string $key La clé de traduction
- * @return string La traduction ou la clé si non trouvée
- */
-function __($key) {
-    global $translations;
-    return isset($translations[$key]) ? $translations[$key] : $key;
-}
+// Fonction de traduction définie dans lang.php
 ?>

@@ -1,4 +1,4 @@
-# Groupon Project Documentation
+# Groupon - Group Orders Application
 
 ## 📝 Table of Contents
 - [Overview](#overview)
@@ -6,50 +6,88 @@
 - [Technologies Used](#technologies-used)
 - [Installation](#installation)
 - [Configuration](#configuration)
+- [MySQL Database](#mysql-database)
 - [Testing and Verification](#testing-and-verification)
 - [Roadmap](#roadmap)
 - [Contribution](#contribution)
 
 ## Overview
-This project is a group order management platform inspired by Groupon, allowing users to create, manage, and track their orders. The system includes a complete administration interface and supports multiple languages.
+**Groupon** is a modern web application for organizing group orders between friends, colleagues, or neighbors. Optimize your delivery costs by grouping your purchases! The application uses MySQL as the primary database for optimal performance and reliability.
 
 ## Features
 - 🔐 Complete authentication system (login, registration, logout)
 - 👤 User profile management
-- 📦 Order creation and management
+- 📦 Group order creation and management
+- 👥 Participant management via unique links
+- 💰 Automatic shipping cost distribution
+- 📊 Dashboard to track orders
 - 🛠️ Administration interface
-- 🌍 Multilingual support
+- 🌍 Multilingual support (FR, EN, ES, DE)
 - 🎨 Light/dark theme
 - 📱 Responsive interface
+- 🔒 Security with Cloudflare Turnstile
 
 ## Technologies Used
-- PHP
-- JavaScript
-- HTML5/CSS3
-- API REST
-- Bootstrap
-- JSON data storage
+- **PHP 8.0+** - Main backend
+- **MySQL** - Relational database
+- **JavaScript** - Frontend interactivity
+- **HTML5/CSS3** - Structure and styling
+- **Bootstrap 5** - CSS framework
+- **PDO** - Secure database access
+- **Cloudflare Turnstile** - Anti-robot protection
 
 ## Installation
-1. Clone the repository
-2. Configure your web server (Apache/Nginx)
-3. Configure the settings in `includes/config.php`
-4. Launch the application
+1. **Download** the project
+2. **Configure** your web server with PHP 8.0+ and MySQL
+3. **Access** `install.php` for automatic installation
+4. **Configure** your MySQL database
+5. **Start** creating your orders!
 
 ## Configuration
 ### Prerequisites
-- PHP 7.4 or higher
-- Web server (Apache/Nginx)
+- **PHP 8.0 or higher**
+- **MySQL 5.7 or higher**
+- **Web server** (Apache/Nginx)
+- **PHP Extensions**: PDO, PDO_MySQL, mbstring, openssl
 
-### Data Storage Configuration
-1. Make sure the `data/users`, `data/commandes`, and `data/exports` folders exist and are writable
-2. No SQL database is needed, all data is stored in JSON files
+### Automatic Installation
+The application includes an automatic installation script similar to WordPress:
+
+1. Access `http://your-site/install.php`
+2. Configure your MySQL database parameters
+3. Installation will automatically create the necessary tables
+4. Create your administrator account
+5. Delete `install.php` after installation
 
 For more details on configuration, see the [detailed configuration guide](CONFIGURATION.md).
+
+## MySQL Database
+The application uses MySQL as the primary database with:
+
+### Table Structure
+- **`groupon_users`** - Users and authentication
+- **`groupon_commandes`** - Group orders
+- **`groupon_participants`** - Order participants
+
+### Advantages
+- **Performance** - Optimized queries and indexing
+- **Reliability** - Transactions and data integrity
+- **Backup** - Standard MySQL backup tools
+- **Scalability** - Support for thousands of users
+- **Security** - Prepared statements and SQL injection protection
 
 ## Testing and Verification
 
 The application includes test scripts to verify that critical features are properly configured:
+
+### MySQL Database Test
+
+To verify if the database connection works:
+
+1. Access your dashboard after login
+2. Check that orders display correctly
+3. Test creating a new order
+4. Verify that participants can join orders
 
 ### Cloudflare Turnstile Test
 
@@ -72,23 +110,27 @@ To verify if email sending is correctly configured:
 
 ## Roadmap
 
-### Phase 1 - Q1 2025
+### Phase 1 - Q1 2025 ✅
 - [x] Basic authentication system
-- [x] Basic order management
+- [x] Group order management
 - [x] Administration interface
 - [x] Initial multilingual support
+- [x] MySQL migration
+- [x] Automatic installation
 
 ### Phase 2 - Q2 2025
 - [ ] Improved user interface
-- [ ] Notification system
+- [ ] Email notification system
 - [ ] Secure payment integration
 - [ ] Advanced search system
+- [ ] PDF order export
 
 ### Phase 3 - Q3 2025
 - [ ] Mobile application
-- [ ] Public API
+- [ ] Public REST API
 - [ ] Recommendation system
-- [ ] Analytics and dashboards
+- [ ] Advanced analytics and dashboards
+- [ ] Automatic backup system
 
 ## Contribution
 Contributions are welcome! Here's how you can contribute:

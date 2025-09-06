@@ -1,4 +1,4 @@
-# Documentación del Proyecto Groupon
+# Groupon - Aplicación de Pedidos Grupales
 
 ## 📝 Tabla de Contenidos
 - [Visión general](#visión-general)
@@ -28,7 +28,7 @@ Este proyecto es una plataforma de gestión de pedidos grupales inspirada en Gro
 - HTML5/CSS3
 - API REST
 - Bootstrap
-- Almacenamiento de datos en JSON
+- MySQL - Base de datos relacional
 
 ## Instalación
 1. Clonar el repositorio
@@ -43,7 +43,7 @@ Este proyecto es una plataforma de gestión de pedidos grupales inspirada en Gro
 
 ### Configuración de almacenamiento de datos
 1. Asegúrese de que las carpetas `data/users`, `data/commandes` y `data/exports` existan y sean escribibles
-2. No se necesita base de datos SQL, todos los datos se almacenan en archivos JSON
+2. Configure su base de datos MySQL y acceda a install.php para la instalación automática
 
 Para más detalles sobre la configuración, consulte la [guía de configuración detallada](CONFIGURATION.md).
 

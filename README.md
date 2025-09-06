@@ -1,4 +1,4 @@
-# Groupon Project Documentation
+# Groupon - Application de Commandes Groupées
 
 <div align="center">
 
@@ -8,10 +8,41 @@
 
 ---
 
-Welcome to the Groupon Project documentation. Please select your preferred language above to access the complete documentation.
+## 🚀 Application Web de Commandes Groupées
 
-Bienvenue dans la documentation du Projet Groupon. Veuillez sélectionner votre langue préférée ci-dessus pour accéder à la documentation complète.
+**Groupon** est une application web moderne pour organiser des commandes groupées entre amis, collègues ou voisins. Optimisez vos frais de livraison en regroupant vos achats !
 
-Bienvenido a la documentación del Proyecto Groupon. Seleccione su idioma preferido arriba para acceder a la documentación completa.
+### ✨ Fonctionnalités Principales
 
-Willkommen bei der Groupon-Projekt-Dokumentation. Bitte wählen Sie oben Ihre bevorzugte Sprache aus, um auf die vollständige Dokumentation zuzugreifen. 
+- 🛒 **Création de commandes** avec produits, dates limites et conditions
+- 👥 **Gestion des participants** via des liens uniques
+- 💰 **Répartition automatique** des frais de port
+- 📊 **Tableau de bord** pour suivre les commandes
+- 🌍 **Interface multilingue** (FR, EN, ES, DE)
+- 🎨 **Thème sombre/clair**
+- 🔒 **Sécurité** avec Cloudflare Turnstile
+
+### 🗄️ Base de Données MySQL
+
+L'application utilise **MySQL** comme base de données principale avec :
+- Installation automatique via interface web
+- Structure optimisée pour les performances
+- Sauvegarde et migration facilitées
+
+### 📋 Installation Rapide
+
+1. **Téléchargez** le projet
+2. **Configurez** votre serveur web avec PHP 8.0+
+3. **Accédez** à `install.php` pour l'installation automatique
+4. **Configurez** votre base de données MySQL
+5. **Commencez** à créer vos commandes !
+
+---
+
+Welcome to the Groupon group orders application documentation. Please select your preferred language above for complete documentation.
+
+Bienvenue dans la documentation de l'application Groupon. Veuillez sélectionner votre langue préférée ci-dessus pour accéder à la documentation complète.
+
+Bienvenido a la documentación de la aplicación Groupon. Seleccione su idioma preferido arriba para acceder a la documentación completa.
+
+Willkommen bei der Groupon-Anwendungsdokumentation. Bitte wählen Sie oben Ihre bevorzugte Sprache aus, um auf die vollständige Dokumentation zuzugreifen. 

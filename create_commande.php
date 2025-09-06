@@ -1,4 +1,6 @@
 <?php
+require_once 'includes/config.php';
+require_once 'includes/lang.php';
 require_once 'includes/header.php';
 $page_title = __('create_order');
 

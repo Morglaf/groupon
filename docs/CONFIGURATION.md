@@ -1,10 +1,26 @@
-# Configuration de l'application
+# Configuration de l'application Groupon
 
-Ce document explique comment configurer l'application pour différents environnements et fonctionnalités.
+Ce document explique comment configurer l'application Groupon pour différents environnements et fonctionnalités.
+
+## Installation automatique
+
+L'application inclut un script d'installation automatique similaire à WordPress qui configure automatiquement la base de données MySQL.
+
+### Installation via interface web
+
+1. **Accédez** à `http://votre-site/install.php`
+2. **Configurez** vos paramètres de base de données MySQL :
+   - Host de la base de données (généralement `localhost`)
+   - Nom de la base de données
+   - Nom d'utilisateur MySQL
+   - Mot de passe MySQL
+   - Préfixe des tables (par défaut `groupon_`)
+3. **Créez** votre compte administrateur
+4. **Supprimez** `install.php` après installation
 
 ## Configuration de base
 
-La configuration de l'application se trouve dans le fichier `includes/config.php`. Vous devez modifier ce fichier pour adapter l'application à votre environnement.
+La configuration de l'application se trouve dans le fichier `includes/config.php`. Ce fichier est généré automatiquement lors de l'installation.
 
 ### Paramètres principaux
 
@@ -22,6 +38,51 @@ date_default_timezone_set('Europe/Paris');
 - `APP_NAME` : Nom de l'application affiché dans l'interface
 - `APP_URL` : URL de base de l'application, utilisée pour générer les liens absolus
 - `date_default_timezone_set` : Fuseau horaire utilisé pour les dates et heures
+
+## Configuration de la base de données MySQL
+
+L'application utilise MySQL comme base de données principale. La configuration est automatiquement générée lors de l'installation.
+
+### Structure des tables
+
+L'installation crée automatiquement les tables suivantes :
+
+- **`groupon_users`** - Utilisateurs et authentification
+  - `id` - Identifiant unique de l'utilisateur
+  - `email` - Adresse email (unique)
+  - `nom` - Nom de famille
+  - `prenom` - Prénom
+  - `password_hash` - Mot de passe haché
+  - `date_inscription` - Date d'inscription
+  - `updated_at` - Date de dernière modification
+
+- **`groupon_commandes`** - Commandes groupées
+  - `id` - Identifiant unique de la commande
+  - `admin_id` - ID de l'administrateur de la commande
+  - `titre` - Titre de la commande
+  - `description` - Description détaillée
+  - `date_limite` - Date limite pour rejoindre
+  - `frais_port` - Frais de port totaux
+  - `created_at` - Date de création
+  - `updated_at` - Date de dernière modification
+
+- **`groupon_participants`** - Participants aux commandes
+  - `id` - Identifiant unique
+  - `commande_id` - ID de la commande
+  - `user_id` - ID de l'utilisateur
+  - `produits` - JSON des produits commandés
+  - `montant_total` - Montant total de la commande
+  - `statut` - Statut du paiement
+  - `created_at` - Date d'ajout
+  - `updated_at` - Date de dernière modification
+
+### Avantages de MySQL
+
+- **Performance** : Requêtes optimisées et indexation automatique
+- **Fiabilité** : Transactions ACID et intégrité des données
+- **Sécurité** : Requêtes préparées et protection contre les injections SQL
+- **Sauvegarde** : Outils standard de sauvegarde et restauration
+- **Évolutivité** : Support de milliers d'utilisateurs simultanés
 
 ## Configuration de Cloudflare Turnstile
 
@@ -88,17 +149,35 @@ define('SMTP_FROM_NAME', 'Groupon App'); // Nom expéditeur
 
 Pour d'autres fournisseurs de services SMTP (OVH, Amazon SES, SendGrid, etc.), consultez leur documentation pour obtenir les paramètres SMTP appropriés.
 
-## Dossiers de données
+## Sauvegarde et maintenance
 
-Par défaut, l'application stocke ses données dans le dossier `data` à la racine du projet. Ce dossier contient :
+### Sauvegarde de la base de données
 
-- `data/users` : Données des utilisateurs (fichiers JSON)
-- `data/commandes` : Données des commandes (fichiers JSON)
-- `data/exports` : Fichiers exportés (PDF, JSON)
+Pour sauvegarder votre base de données MySQL :
 
-Vous pouvez modifier ces chemins dans le fichier de configuration si nécessaire.
+```bash
+# Sauvegarde complète
+mysqldump -u username -p database_name > backup.sql
 
-**Note importante** : L'application n'utilise pas de base de données SQL. Toutes les données sont stockées dans des fichiers JSON, ce qui simplifie l'installation et la configuration.
+# Sauvegarde des tables Groupon uniquement
+mysqldump -u username -p database_name groupon_users groupon_commandes groupon_participants > groupon_backup.sql
+```
+
+### Restauration
+
+```bash
+# Restauration complète
+mysql -u username -p database_name < backup.sql
+
+# Restauration des tables Groupon
+mysql -u username -p database_name < groupon_backup.sql
+```
+
+### Maintenance
+
+- **Optimisation** : Exécutez `OPTIMIZE TABLE` régulièrement sur vos tables
+- **Nettoyage** : Supprimez les commandes anciennes et les utilisateurs inactifs
+- **Monitoring** : Surveillez les performances avec les outils MySQL standard
 
 ## Langues disponibles
 
@@ -217,7 +296,7 @@ By default, the application stores its data in the `data` folder at the root of 
 
 You can modify these paths in the configuration file if necessary.
 
-**Important note**: The application does not use an SQL database. All data is stored in JSON files, which simplifies installation and configuration.
+**Important note**: The application uses MySQL as the primary database for optimal performance and reliability.
 
 ## Available Languages
 
@@ -336,7 +415,7 @@ Por defecto, la aplicación almacena sus datos en la carpeta `data` en la raíz 
 
 Puede modificar estas rutas en el archivo de configuración si es necesario.
 
-**Nota importante**: La aplicación no utiliza una base de datos SQL. Todos los datos se almacenan en archivos JSON, lo que simplifica la instalación y configuración.
+**Nota importante**: La aplicación utiliza MySQL como base de datos principal para un rendimiento y confiabilidad óptimos.
 
 ## Idiomas Disponibles
 
@@ -455,7 +534,7 @@ Standardmäßig speichert die Anwendung ihre Daten im Ordner `data` im Stammverz
 
 Sie können diese Pfade in der Konfigurationsdatei ändern, falls erforderlich.
 
-**Wichtiger Hinweis**: Die Anwendung verwendet keine SQL-Datenbank. Alle Daten werden in JSON-Dateien gespeichert, was die Installation und Konfiguration vereinfacht.
+**Wichtiger Hinweis**: Die Anwendung verwendet MySQL als primäre Datenbank für optimale Leistung und Zuverlässigkeit.
 
 ## Verfügbare Sprachen
 

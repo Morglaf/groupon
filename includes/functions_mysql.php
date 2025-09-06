@@ -483,7 +483,7 @@ function getUserIdByEmail($email) {
  * @param string $prenom Prénom
  * @return array|null Données de l'utilisateur ou null si échec
  */
-function createUser($email, $password, $nom, $prenom) {
+function createUser($prenom, $nom, $email, $password) {
     if (!isValidEmail($email)) {
         return null;
     }
