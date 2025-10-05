@@ -147,9 +147,17 @@ body.dark-mode {
 }
 
 /* Footer */
-.dark-mode footer {
+.dark-mode .footer-custom {
     background-color: #222 !important;
     border-top: 1px solid #444;
+}
+
+.dark-mode .footer-text {
+    color: #aaa !important;
+}
+
+.dark-mode .footer-text h5 {
+    color: #e4e4e4 !important;
 }
 
 /* Produits */
@@ -260,7 +268,40 @@ body.dark-mode {
     transition: .4s;
     border-radius: 50%;
 }
+.dark-mode .form-text {
+    color: #e4e4e4;
+}
 
+/* Placeholders pour le thème sombre */
+.dark-mode input::placeholder,
+.dark-mode textarea::placeholder {
+    color: #888 !important;
+    opacity: 1;
+}
+
+.dark-mode input::-webkit-input-placeholder,
+.dark-mode textarea::-webkit-input-placeholder {
+    color: #888 !important;
+    opacity: 1;
+}
+
+.dark-mode input::-moz-placeholder,
+.dark-mode textarea::-moz-placeholder {
+    color: #888 !important;
+    opacity: 1;
+}
+
+.dark-mode input:-ms-input-placeholder,
+.dark-mode textarea:-ms-input-placeholder {
+    color: #888 !important;
+    opacity: 1;
+}
+
+.dark-mode input:-moz-placeholder,
+.dark-mode textarea:-moz-placeholder {
+    color: #888 !important;
+    opacity: 1;
+}
 
 
 input:checked + .slider:before {

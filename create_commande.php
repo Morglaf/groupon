@@ -1,4 +1,7 @@
 <?php
+// Démarrer l'output buffering pour permettre les redirections
+ob_start();
+
 require_once 'includes/config.php';
 require_once 'includes/lang.php';
 require_once 'includes/header.php';
@@ -25,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = __('required_field');
     }
     
-    if (empty($type_commande) || !in_array($type_commande, ['poids', 'nombre', 'montant'])) {
+    if (empty($type_commande) || !in_array($type_commande, ['poids', 'nombre', 'montant', 'sans_frais'])) {
         $errors[] = __('invalid_order_type');
     }
     
@@ -79,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    if (empty($paliers)) {
+    if (empty($paliers) && $type_commande !== 'sans_frais') {
         $errors[] = __('at_least_one_tier');
     }
     
@@ -143,6 +146,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($commande_id) {
             $_SESSION['flash_message'] = __('order_created');
             $_SESSION['flash_type'] = 'success';
+            // Vider le buffer de sortie avant la redirection
+            ob_end_clean();
             header('Location: admin_commande.php?id=' . $commande_id);
             exit;
         } else {
@@ -150,6 +155,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Vider le buffer et afficher le contenu si on arrive ici (pas de redirection)
+ob_end_flush();
 ?>
 
 <h1 class="mb-4"><?php echo __('create_order'); ?></h1>
@@ -172,38 +180,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card-body">
             <div class="mb-3">
                 <label for="titre" class="form-label"><?php echo __('order_title'); ?></label>
-                <input type="text" class="form-control" id="titre" name="titre" required>
+                <input type="text" class="form-control" id="titre" name="titre" value="<?php echo htmlspecialchars($_POST['titre'] ?? ''); ?>" required>
             </div>
             
             <div class="mb-3">
                 <label for="type_commande" class="form-label"><?php echo __('order_type'); ?></label>
-                <select class="form-select" id="type_commande" name="type_commande" required>
-                    <option value="poids"><?php echo __('weight_based'); ?></option>
-                    <option value="nombre"><?php echo __('quantity_based'); ?></option>
-                    <option value="montant"><?php echo __('amount_based'); ?></option>
+                <select class="form-select" id="type_commande" name="type_commande" required onchange="updateCommandeTypeFields()">
+                    <option value="poids" <?php echo (($_POST['type_commande'] ?? '') === 'poids') ? 'selected' : ''; ?>><?php echo __('weight_based'); ?></option>
+                    <option value="nombre" <?php echo (($_POST['type_commande'] ?? '') === 'nombre') ? 'selected' : ''; ?>><?php echo __('quantity_based'); ?></option>
+                    <option value="montant" <?php echo (($_POST['type_commande'] ?? '') === 'montant') ? 'selected' : ''; ?>><?php echo __('amount_based'); ?></option>
+                    <option value="sans_frais" <?php echo (($_POST['type_commande'] ?? '') === 'sans_frais') ? 'selected' : ''; ?>><?php echo __('no_shipping'); ?></option>
                 </select>
             </div>
             
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label for="date_limite" class="form-label"><?php echo __('deadline'); ?></label>
-                    <input type="datetime-local" class="form-control" id="date_limite" name="date_limite" required>
+                    <input type="datetime-local" class="form-control" id="date_limite" name="date_limite" value="<?php echo $_POST['date_limite'] ?? ''; ?>" required>
                 </div>
                 
                 <div class="col-md-6 mb-3">
                     <label for="date_recuperation" class="form-label"><?php echo __('pickup_date'); ?></label>
-                    <input type="datetime-local" class="form-control" id="date_recuperation" name="date_recuperation" required>
+                    <input type="datetime-local" class="form-control" id="date_recuperation" name="date_recuperation" value="<?php echo $_POST['date_recuperation'] ?? ''; ?>" required>
                 </div>
             </div>
             
             <div class="mb-3">
                 <label for="adresse_recuperation" class="form-label"><?php echo __('pickup_address'); ?></label>
-                <textarea class="form-control" id="adresse_recuperation" name="adresse_recuperation" rows="2" required></textarea>
+                <textarea class="form-control" id="adresse_recuperation" name="adresse_recuperation" rows="2" required><?php echo htmlspecialchars($_POST['adresse_recuperation'] ?? ''); ?></textarea>
             </div>
             
             <div class="mb-3">
                 <label for="description" class="form-label"><?php echo __('description'); ?></label>
-                <textarea class="form-control" id="description" name="description" rows="3" placeholder="<?php echo __('order_description_placeholder'); ?>"></textarea>
+                <textarea class="form-control" id="description" name="description" rows="3" placeholder="<?php echo __('order_description_placeholder'); ?>"><?php echo htmlspecialchars($_POST['description'] ?? ''); ?></textarea>
                 <div class="form-text"><?php echo __('order_description_help'); ?></div>
             </div>
         </div>
@@ -211,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><?php echo __('tiers'); ?></h5>
+            <h5 class="mb-0" id="paliers-section-title"><?php echo __('tiers'); ?></h5>
         </div>
         <div class="card-body">
             <div id="paliers-container">
@@ -251,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="row">
             <div class="col-md-4 mb-2">
                 <label class="form-label"><?php echo __('min'); ?></label>
-                <input type="number" class="form-control palier-min" name="palier_min[]" min="0" step="0.01" required>
+                <input type="number" class="form-control palier-min" name="palier_min[]" min="0" step="0.01">
             </div>
             <div class="col-md-4 mb-2">
                 <label class="form-label"><?php echo __('max'); ?></label>
@@ -259,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="col-md-3 mb-2">
                 <label class="form-label"><?php echo __('shipping_cost'); ?></label>
-                <input type="number" class="form-control palier-frais" name="palier_frais[]" min="0" step="0.01" required>
+                <input type="number" class="form-control palier-frais" name="palier_frais[]" min="0" step="0.01">
             </div>
             <div class="col-md-1 d-flex align-items-end mb-2">
                 <button type="button" class="btn btn-outline-danger remove-palier-btn">
@@ -310,11 +319,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="text" class="form-control variation-nom" name="variation_nom[0][]" required>
             </div>
             <div class="col-md-3 mb-2">
-                <label class="form-label"><?php echo __('product_weight'); ?> (kg)</label>
+                <label class="form-label"><?php echo __('product_weight'); ?></label>
                 <input type="number" class="form-control variation-poids" name="variation_poids[0][]" min="0" step="0.001" required>
             </div>
             <div class="col-md-3 mb-2">
-                <label class="form-label"><?php echo __('product_price'); ?> (€)</label>
+                <label class="form-label"><?php echo __('product_price'); ?></label>
                 <input type="number" class="form-control variation-prix" name="variation_prix[0][]" min="0" step="0.01" required>
             </div>
             <div class="col-md-2 d-flex align-items-end mb-2">
@@ -328,11 +337,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialiser avec un palier par défaut
-    addPalier();
+    // Restaurer les données du formulaire si elles existent
+    restoreFormData();
     
-    // Initialiser avec un produit par défaut
-    addProduit();
+    // Initialiser avec un palier par défaut si aucun n'existe
+    if (document.querySelectorAll('.palier-item').length === 0) {
+        addPalier();
+    }
+    
+    // Initialiser avec un produit par défaut si aucun n'existe
+    if (document.querySelectorAll('.produit-item').length === 0) {
+        addProduit();
+    }
     
     // Gestionnaire pour ajouter un palier
     document.getElementById('add-palier-btn').addEventListener('click', addPalier);
@@ -376,6 +392,17 @@ function addPalier() {
     const template = document.getElementById('palier-template');
     const container = document.getElementById('paliers-container');
     const clone = document.importNode(template.content, true);
+    
+    // Ajouter les attributs required selon le type de commande
+    const commandeType = document.getElementById('type_commande');
+    const isRequired = commandeType && commandeType.value !== 'sans_frais';
+    
+    if (isRequired) {
+        clone.querySelectorAll('.palier-min, .palier-max, .palier-frais').forEach(input => {
+            input.setAttribute('required', 'required');
+        });
+    }
+    
     container.appendChild(clone);
 }
 
@@ -420,6 +447,93 @@ function updateProduitIndexes() {
             const variationIndex = input.name.match(/\[\d+\]\[(\d+)\]/)[1];
             input.name = baseName + '[' + produitIndex + '][' + variationIndex + ']';
         });
+    });
+}
+
+// Initialiser l'affichage au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    updateCommandeTypeFields();
+    initializeDateTimeFields();
+});
+
+function restoreFormData() {
+    // Restaurer les paliers
+    <?php if (isset($_POST['palier_min']) && is_array($_POST['palier_min'])): ?>
+    <?php foreach ($_POST['palier_min'] as $index => $min): ?>
+    <?php if ($index > 0): ?>
+    addPalier();
+    <?php endif; ?>
+    const palierItems = document.querySelectorAll('.palier-item');
+    if (palierItems[<?php echo $index; ?>]) {
+        palierItems[<?php echo $index; ?>].querySelector('.palier-min').value = '<?php echo htmlspecialchars($_POST['palier_min'][$index] ?? ''); ?>';
+        palierItems[<?php echo $index; ?>].querySelector('.palier-max').value = '<?php echo htmlspecialchars($_POST['palier_max'][$index] ?? ''); ?>';
+        palierItems[<?php echo $index; ?>].querySelector('.palier-frais').value = '<?php echo htmlspecialchars($_POST['palier_frais'][$index] ?? ''); ?>';
+    }
+    <?php endforeach; ?>
+    <?php endif; ?>
+    
+    // Restaurer les produits
+    <?php if (isset($_POST['produit_nom']) && is_array($_POST['produit_nom'])): ?>
+    <?php foreach ($_POST['produit_nom'] as $index => $nom): ?>
+    <?php if ($index > 0): ?>
+    addProduit();
+    <?php endif; ?>
+    const produitItems = document.querySelectorAll('.produit-item');
+    if (produitItems[<?php echo $index; ?>]) {
+        produitItems[<?php echo $index; ?>].querySelector('.produit-nom').value = '<?php echo htmlspecialchars($_POST['produit_nom'][$index] ?? ''); ?>';
+        produitItems[<?php echo $index; ?>].querySelector('.produit-url').value = '<?php echo htmlspecialchars($_POST['produit_url'][$index] ?? ''); ?>';
+        
+        // Restaurer les variations pour ce produit
+        <?php if (isset($_POST['variation_nom'][$index]) && is_array($_POST['variation_nom'][$index])): ?>
+        <?php foreach ($_POST['variation_nom'][$index] as $varIndex => $varNom): ?>
+        <?php if ($varIndex > 0): ?>
+        addVariation(produitItems[<?php echo $index; ?>], <?php echo $index; ?>);
+        <?php endif; ?>
+        const variations = produitItems[<?php echo $index; ?>].querySelectorAll('.variation-item');
+        if (variations[<?php echo $varIndex; ?>]) {
+            variations[<?php echo $varIndex; ?>].querySelector('.variation-nom').value = '<?php echo htmlspecialchars($_POST['variation_nom'][$index][$varIndex] ?? ''); ?>';
+            variations[<?php echo $varIndex; ?>].querySelector('.variation-poids').value = '<?php echo htmlspecialchars($_POST['variation_poids'][$index][$varIndex] ?? ''); ?>';
+            variations[<?php echo $varIndex; ?>].querySelector('.variation-prix').value = '<?php echo htmlspecialchars($_POST['variation_prix'][$index][$varIndex] ?? ''); ?>';
+        }
+        <?php endforeach; ?>
+        <?php endif; ?>
+    }
+    <?php endforeach; ?>
+    <?php endif; ?>
+}
+
+function initializeDateTimeFields() {
+    const dateLimiteInput = document.getElementById('date_limite');
+    const dateRecuperationInput = document.getElementById('date_recuperation');
+    
+    // Si les champs sont vides, définir des valeurs par défaut
+    if (!dateLimiteInput.value) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(20, 0, 0, 0);
+        dateLimiteInput.value = tomorrow.toISOString().slice(0, 16);
+    }
+    
+    if (!dateRecuperationInput.value) {
+        const dayAfterTomorrow = new Date();
+        dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+        dayAfterTomorrow.setHours(20, 0, 0, 0);
+        dateRecuperationInput.value = dayAfterTomorrow.toISOString().slice(0, 16);
+    }
+    
+    // Mettre à jour la date de récupération quand la date limite change
+    dateLimiteInput.addEventListener('change', function() {
+        if (this.value) {
+            const limiteDate = new Date(this.value);
+            const recuperationDate = new Date(limiteDate);
+            recuperationDate.setDate(recuperationDate.getDate() + 1);
+            recuperationDate.setHours(20, 0, 0, 0);
+            
+            // Ne mettre à jour que si la date de récupération est vide ou antérieure
+            if (!dateRecuperationInput.value || new Date(dateRecuperationInput.value) <= limiteDate) {
+                dateRecuperationInput.value = recuperationDate.toISOString().slice(0, 16);
+            }
+        }
     });
 }
 </script>

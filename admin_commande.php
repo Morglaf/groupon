@@ -1,8 +1,10 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/lang.php';
-require_once 'includes/auth.php';
 require_once 'includes/header.php';
+
+// Vérifier si l'utilisateur est connecté
+requireLogin();
 
 // Vérifier si l'ID de commande est fourni
 if (!isset($_GET['id'])) {
@@ -216,8 +218,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // Action : Générer un PDF
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'generate_pdf') {
-    // Nettoyer le buffer de sortie
-    if (ob_get_level()) {
+    // Nettoyer complètement tous les buffers de sortie
+    while (ob_get_level()) {
         ob_end_clean();
     }
     
@@ -231,6 +233,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         header('Content-Length: ' . filesize($pdf_path));
         header('Cache-Control: no-cache, must-revalidate');
         header('Pragma: no-cache');
+        header('Expires: 0');
         
         // Envoyer le fichier PDF
         readfile($pdf_path);
@@ -242,6 +245,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } else {
         // Erreur - rediriger avec message
         $_SESSION['flash_message'] = 'Erreur lors de la génération du PDF. Vérifiez que TCPDF est installé.';
+        $_SESSION['flash_type'] = 'danger';
+        header('Location: admin_commande.php?id=' . $commande_id);
+        exit;
+    }
+}
+
+// Action : Générer un PDF de checklist
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'generate_checklist_pdf') {
+    // Nettoyer complètement tous les buffers de sortie
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    $pdf_path = generateCommandeChecklistPDF($commande_id);
+    if ($pdf_path && file_exists($pdf_path)) {
+        $filename = basename($pdf_path);
+        
+        // Headers pour le PDF
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($pdf_path));
+        header('Cache-Control: no-cache, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Envoyer le fichier PDF
+        readfile($pdf_path);
+        
+        // Supprimer le fichier temporaire
+        unlink($pdf_path);
+        
+        exit;
+    } else {
+        // Erreur - rediriger avec message
+        $_SESSION['flash_message'] = 'Erreur lors de la génération du PDF de checklist. Vérifiez que TCPDF est installé.';
         $_SESSION['flash_type'] = 'danger';
         header('Location: admin_commande.php?id=' . $commande_id);
         exit;
@@ -271,6 +309,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $errors[] = 'Erreur lors de la mise à jour du statut public.';
     }
 }
+
+// Inclure le header après toute la logique de traitement
+require_once 'includes/header.php';
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -336,6 +377,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         case 'montant':
                             echo __('based_on_amount');
                             break;
+                        case 'sans_frais':
+                            echo __('based_on_no_shipping');
+                            break;
                     }
                     ?>
                 </div>
@@ -359,6 +403,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <?php endif; ?>
                 </div>
                 
+                <?php if ($commande_data['type_commande'] !== 'sans_frais'): ?>
                 <div class="mb-3">
                     <strong><?php echo __('shipping_tiers'); ?>:</strong>
                     <?php 
@@ -398,6 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     <div class="text-muted mt-2"><?php echo __('no_shipping_tiers'); ?></div>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
                 
                 <div class="mb-3">
                     <strong><?php echo __('visibility'); ?>:</strong>
@@ -435,12 +481,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         </button>
                     </form>
                     
-                    <form method="post" action="" class="mb-2">
-                        <input type="hidden" name="action" value="generate_pdf">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-file-pdf"></i> <?php echo __('export_pdf'); ?>
-                        </button>
-                    </form>
+                    <div class="mb-2">
+                        <label class="form-label"><?php echo __('export_pdf'); ?>:</label>
+                        <div class="d-grid gap-2">
+                            <form method="post" action="">
+                                <input type="hidden" name="action" value="generate_pdf">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-file-pdf"></i> Résumé entreprise
+                                </button>
+                            </form>
+                            <form method="post" action="">
+                                <input type="hidden" name="action" value="generate_checklist_pdf">
+                                <button type="submit" class="btn btn-info w-100">
+                                    <i class="fas fa-list-check"></i> <?php echo __('export_checklist'); ?>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                     
                     <form method="post" action="" class="mb-2">
                         <input type="hidden" name="action" value="export_json">
@@ -467,22 +524,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-3 text-center">
+                    <div class="<?php echo $commande_data['type_commande'] !== 'sans_frais' ? 'col-md-3' : 'col-md-4'; ?> text-center">
                         <h3><?php echo $nb_participants; ?></h3>
                         <p><?php echo __('participants'); ?></p>
                     </div>
-                    <div class="col-md-3 text-center">
+                    <div class="<?php echo $commande_data['type_commande'] !== 'sans_frais' ? 'col-md-3' : 'col-md-4'; ?> text-center">
                         <h3><?php echo count($commande_data['produits']); ?></h3>
                         <p><?php echo __('products'); ?></p>
                     </div>
-                    <div class="col-md-3 text-center">
+                    <div class="<?php echo $commande_data['type_commande'] !== 'sans_frais' ? 'col-md-3' : 'col-md-4'; ?> text-center">
                         <h3><?php echo number_format($commande_data['montant_total'], 2, ',', ' '); ?> €</h3>
                         <p><?php echo __('total_amount'); ?></p>
                     </div>
+                    <?php if ($commande_data['type_commande'] !== 'sans_frais'): ?>
                     <div class="col-md-3 text-center">
                         <h3><?php echo number_format($commande_data['frais_port'], 2, ',', ' '); ?> €</h3>
                         <p><?php echo __('shipping_fee'); ?></p>
                     </div>
+                    <?php endif; ?>
                 </div>
                 
                 <hr>
@@ -673,7 +732,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <th><?php echo __('participant'); ?></th>
                                 <th><?php echo __('products'); ?></th>
                                 <th><?php echo __('product_amount'); ?></th>
+                                <?php if ($commande_data['type_commande'] !== 'sans_frais'): ?>
                                 <th><?php echo __('shipping_fee'); ?></th>
+                                <?php endif; ?>
                                 <th><?php echo __('total'); ?></th>
                                 <th><?php echo __('payment_status'); ?></th>
                                 <th><?php echo __('actions'); ?></th>
@@ -707,7 +768,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo number_format($participant['montant_produits'], 2, ',', ' '); ?> €</td>
+                                <?php if ($commande_data['type_commande'] !== 'sans_frais'): ?>
                                 <td><?php echo number_format($participant['part_frais_port'], 2, ',', ' '); ?> €</td>
+                                <?php endif; ?>
                                 <td><?php echo number_format($participant['montant_total'], 2, ',', ' '); ?> €</td>
                                 <td>
                                     <span class="<?php echo $participant['statut_paiement'] ? 'payment-status-paid' : 'payment-status-unpaid'; ?>">

@@ -1,4 +1,4 @@
-# Groupon - Application de Commandes Groupées
+# Groupons - Application de Commandes Groupées
 
 ## 📝 Table des matières
 - [Vue d'ensemble](#vue-densemble)
@@ -12,7 +12,7 @@
 - [Contribution](#contribution)
 
 ## Vue d'ensemble
-**Groupon** est une application web moderne pour organiser des commandes groupées entre amis, collègues ou voisins. Optimisez vos frais de livraison en regroupant vos achats ! L'application utilise MySQL comme base de données principale pour une performance et une fiabilité optimales.
+**Groupons** est une application web moderne pour organiser des commandes groupées entre amis, collègues ou voisins. Optimisez vos frais de livraison en regroupant vos achats ! L'application utilise MySQL comme base de données principale pour une performance et une fiabilité optimales.
 
 ## Fonctionnalités
 - 🔐 Système d'authentification complet (connexion, inscription, déconnexion)

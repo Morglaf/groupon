@@ -64,7 +64,7 @@ function logoutUser() {
  * Redirige l'utilisateur si non connecté
  * @param string $redirect_url URL de redirection
  */
-function requireLogin($redirect_url = '/login.php') {
+function requireLogin($redirect_url = 'login.php') {
     if (!isLoggedIn()) {
         header('Location: ' . $redirect_url);
         exit;

@@ -1,4 +1,7 @@
 <?php
+// Démarrer le buffer de sortie pour contrôler l'affichage
+ob_start();
+
 require_once 'includes/config.php';
 require_once 'includes/lang.php';
 require_once 'includes/header.php';
@@ -22,7 +25,6 @@ if (!$commande_data) {
     exit;
 }
 
-$page_title = __('order') . ": " . $commande_data['titre'];
 $user_id = getCurrentUserId();
 $is_admin = isCommandeAdmin($commande_id, $user_id);
 $is_participant = isCommandeParticipant($commande_id, $user_id);
@@ -46,6 +48,10 @@ $success_message = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Vérifier si l'utilisateur est connecté
     if (!isLoggedIn()) {
+        // Nettoyer les buffers de sortie avant la redirection
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
         $_SESSION['flash_message'] = __('must_login_to_join');
         $_SESSION['flash_type'] = 'warning';
         header('Location: login.php?redirect=' . urlencode('commande.php?id=' . $commande_id));
@@ -59,7 +65,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Action : Rejoindre la commande
         if (isset($_POST['action']) && $_POST['action'] === 'join') {
             if (addParticipant($commande_id, $user_id)) {
+                // Nettoyer le buffer de sortie et rediriger
+                ob_end_clean();
                 $_SESSION['flash_message'] = __('joined_order');
+                $_SESSION['flash_type'] = 'success';
+                header('Location: commande.php?id=' . $commande_id);
+                exit;
+            } else {
+                $errors[] = __('error_occurred');
+            }
+        }
+        
+        // Action : Quitter la commande
+        if (isset($_POST['action']) && $_POST['action'] === 'leave') {
+            if (removeParticipant($commande_id, $user_id)) {
+                // Nettoyer le buffer de sortie et rediriger
+                ob_end_clean();
+                $_SESSION['flash_message'] = __('left_order');
                 $_SESSION['flash_type'] = 'success';
                 header('Location: commande.php?id=' . $commande_id);
                 exit;
@@ -78,12 +100,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $variation_id = $variation['id'];
                     $quantite = isset($_POST['quantity'][$variation_id]) ? intval($_POST['quantity'][$variation_id]) : 0;
                     
-                    // Mettre à jour la quantité si elle a changé
-                    if ($quantite > 0) {
-                        $result = addArticle($commande_id, $user_id, $variation_id, $quantite);
-                        if (!$result) {
-                            $success = false;
-                        }
+                    // Mettre à jour la quantité (même si elle est à 0 pour supprimer l'article)
+                    $result = addArticle($commande_id, $user_id, $variation_id, $quantite);
+                    if (!$result) {
+                        $success = false;
                     }
                 }
             }
@@ -99,6 +119,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Définir le titre de la page après toute la logique de traitement
+$page_title = __('order') . ": " . $commande_data['titre'];
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -177,12 +200,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             echo __('quantity_based');
                             break;
                         case 'montant':
-                            echo __('cost_based');
+                            echo __('amount_based');
+                            break;
+                        case 'sans_frais':
+                            echo __('no_shipping');
                             break;
                     }
                     ?>
                 </div>
                 
+                <?php if ($commande_data['type_commande'] !== 'sans_frais'): ?>
                 <div class="mb-3">
                     <strong><?php echo __('shipping_tiers'); ?>:</strong>
                     <?php 
@@ -222,6 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="text-muted mt-2"><?php echo __('no_shipping_tiers'); ?></div>
                     <?php endif; ?>
                 </div>
+                <?php endif; ?>
                 
                 <?php if (!isLoggedIn()): ?>
                 <hr>
@@ -234,7 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
                 <?php elseif (!$is_participant && !$is_admin): ?>
                 <hr>
-                <form method="post" action="">
+                <form method="post" action="" id="join-form">
                     <input type="hidden" name="action" value="join">
                     <div class="d-grid">
                         <button type="submit" class="btn btn-primary btn-lg" <?php echo $is_closed ? 'disabled' : ''; ?>>
@@ -242,6 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </button>
                     </div>
                 </form>
+                
                 <?php endif; ?>
                 
                 <?php if ($is_participant && $participant_data): ?>
@@ -249,9 +278,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3">
                     <strong><?php echo __('my_order'); ?>:</strong> <?php echo number_format($participant_data['montant_produits'], 2, ',', ' '); ?> €
                 </div>
+                <?php if ($commande_data['type_commande'] !== 'sans_frais'): ?>
                 <div class="mb-3">
                     <strong><?php echo __('shipping_fees'); ?>:</strong> <?php echo number_format($participant_data['part_frais_port'], 2, ',', ' '); ?> €
                 </div>
+                <?php endif; ?>
                 <div class="mb-3">
                     <strong><?php echo __('total_to_pay'); ?>:</strong> 
                     <span class="fw-bold"><?php echo number_format($participant_data['montant_total'], 2, ',', ' '); ?> €</span>
@@ -262,6 +293,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php echo $participant_data['statut_paiement'] ? __('paid') : __('unpaid'); ?>
                     </span>
                 </div>
+                
+                <?php if (!$is_closed): ?>
+                <hr>
+                <form method="post" action="" id="leave-form" onsubmit="return confirm('<?php echo __('confirm_leave_order'); ?>')">
+                    <input type="hidden" name="action" value="leave">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <?php echo __('leave_order'); ?>
+                        </button>
+                    </div>
+                </form>
+                
+                <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -438,10 +482,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <td class="fw-bold"><?php echo number_format($total_poids, 2, ',', ' '); ?> kg</td>
                                 <td class="fw-bold"><?php echo number_format($total_montant, 2, ',', ' '); ?> €</td>
                             </tr>
+                            <?php if ($commande_data['type_commande'] !== 'sans_frais'): ?>
                             <tr class="table-light">
                                 <td colspan="4" class="fw-bold"><?php echo __('shipping_fees'); ?></td>
                                 <td class="fw-bold"><?php echo number_format($commande_data['frais_port'], 2, ',', ' '); ?> €</td>
                             </tr>
+                            <?php endif; ?>
                             <tr class="table-primary">
                                 <td colspan="4" class="fw-bold"><?php echo __('grand_total'); ?></td>
                                 <td class="fw-bold"><?php echo number_format($total_montant + $commande_data['frais_port'], 2, ',', ' '); ?> €</td>

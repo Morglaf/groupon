@@ -1,6 +1,6 @@
-# Configuration de l'application Groupon
+# Configuration de l'application Groupons
 
-Ce document explique comment configurer l'application Groupon pour différents environnements et fonctionnalités.
+Ce document explique comment configurer l'application Groupons pour différents environnements et fonctionnalités.
 
 ## Installation automatique
 
@@ -26,7 +26,7 @@ La configuration de l'application se trouve dans le fichier `includes/config.php
 
 ```php
 // Nom de l'application
-define('APP_NAME', 'Groupon');
+define('APP_NAME', 'Groupons');
 
 // URL de base de l'application (sans slash final)
 define('APP_URL', 'http://localhost');
@@ -120,7 +120,7 @@ define('SMTP_AUTH', false); // Pas d'authentification
 define('SMTP_USERNAME', ''); // Pas de nom d'utilisateur
 define('SMTP_PASSWORD', ''); // Pas de mot de passe
 define('SMTP_FROM_EMAIL', 'noreply@votredomaine.com'); // Email expéditeur
-define('SMTP_FROM_NAME', 'Groupon App'); // Nom expéditeur
+define('SMTP_FROM_NAME', 'Groupons App'); // Nom expéditeur
 ```
 
 ### Configuration avec Gmail
@@ -136,7 +136,7 @@ define('SMTP_AUTH', true); // Authentification requise
 define('SMTP_USERNAME', 'votre-email@gmail.com'); // Votre adresse Gmail
 define('SMTP_PASSWORD', 'votre-mot-de-passe-d-application'); // Mot de passe d'application
 define('SMTP_FROM_EMAIL', 'votre-email@gmail.com'); // Email expéditeur
-define('SMTP_FROM_NAME', 'Groupon App'); // Nom expéditeur
+define('SMTP_FROM_NAME', 'Groupons App'); // Nom expéditeur
 ```
 
 **Note importante** : Pour Gmail, vous devez utiliser un "mot de passe d'application" et non votre mot de passe principal. Pour créer un mot de passe d'application :
@@ -159,7 +159,7 @@ Pour sauvegarder votre base de données MySQL :
 # Sauvegarde complète
 mysqldump -u username -p database_name > backup.sql
 
-# Sauvegarde des tables Groupon uniquement
+# Sauvegarde des tables Groupons uniquement
 mysqldump -u username -p database_name groupon_users groupon_commandes groupon_participants > groupon_backup.sql
 ```
 
@@ -169,7 +169,7 @@ mysqldump -u username -p database_name groupon_users groupon_commandes groupon_p
 # Restauration complète
 mysql -u username -p database_name < backup.sql
 
-# Restauration des tables Groupon
+# Restauration des tables Groupons
 mysql -u username -p database_name < groupon_backup.sql
 ```
 
@@ -208,7 +208,7 @@ The application configuration is located in the `includes/config.php` file. You 
 
 ```php
 // Application name
-define('APP_NAME', 'Groupon');
+define('APP_NAME', 'Groupons');
 
 // Base URL of the application (without trailing slash)
 define('APP_URL', 'http://localhost');
@@ -257,7 +257,7 @@ define('SMTP_AUTH', false); // No authentication
 define('SMTP_USERNAME', ''); // No username
 define('SMTP_PASSWORD', ''); // No password
 define('SMTP_FROM_EMAIL', 'noreply@yourdomain.com'); // Sender email
-define('SMTP_FROM_NAME', 'Groupon App'); // Sender name
+define('SMTP_FROM_NAME', 'Groupons App'); // Sender name
 ```
 
 ### Configuration with Gmail
@@ -273,7 +273,7 @@ define('SMTP_AUTH', true); // Authentication required
 define('SMTP_USERNAME', 'your-email@gmail.com'); // Your Gmail address
 define('SMTP_PASSWORD', 'your-app-password'); // App password
 define('SMTP_FROM_EMAIL', 'your-email@gmail.com'); // Sender email
-define('SMTP_FROM_NAME', 'Groupon App'); // Sender name
+define('SMTP_FROM_NAME', 'Groupons App'); // Sender name
 ```
 
 **Important note**: For Gmail, you must use an "app password" and not your main password. To create an app password:
@@ -327,7 +327,7 @@ La configuración de la aplicación se encuentra en el archivo `includes/config.
 
 ```php
 // Nombre de la aplicación
-define('APP_NAME', 'Groupon');
+define('APP_NAME', 'Groupons');
 
 // URL base de la aplicación (sin barra final)
 define('APP_URL', 'http://localhost');
@@ -376,7 +376,7 @@ define('SMTP_AUTH', false); // Sin autenticación
 define('SMTP_USERNAME', ''); // Sin nombre de usuario
 define('SMTP_PASSWORD', ''); // Sin contraseña
 define('SMTP_FROM_EMAIL', 'noreply@sudominio.com'); // Correo electrónico del remitente
-define('SMTP_FROM_NAME', 'Groupon App'); // Nombre del remitente
+define('SMTP_FROM_NAME', 'Groupons App'); // Nombre del remitente
 ```
 
 ### Configuración con Gmail
@@ -392,7 +392,7 @@ define('SMTP_AUTH', true); // Autenticación requerida
 define('SMTP_USERNAME', 'su-correo@gmail.com'); // Su dirección de Gmail
 define('SMTP_PASSWORD', 'su-contraseña-de-aplicación'); // Contraseña de aplicación
 define('SMTP_FROM_EMAIL', 'su-correo@gmail.com'); // Correo electrónico del remitente
-define('SMTP_FROM_NAME', 'Groupon App'); // Nombre del remitente
+define('SMTP_FROM_NAME', 'Groupons App'); // Nombre del remitente
 ```
 
 **Nota importante**: Para Gmail, debe utilizar una "contraseña de aplicación" y no su contraseña principal. Para crear una contraseña de aplicación:
@@ -446,7 +446,7 @@ Die Anwendungskonfiguration befindet sich in der Datei `includes/config.php`. Si
 
 ```php
 // Anwendungsname
-define('APP_NAME', 'Groupon');
+define('APP_NAME', 'Groupons');
 
 // Basis-URL der Anwendung (ohne abschließenden Schrägstrich)
 define('APP_URL', 'http://localhost');
@@ -495,7 +495,7 @@ define('SMTP_AUTH', false); // Keine Authentifizierung
 define('SMTP_USERNAME', ''); // Kein Benutzername
 define('SMTP_PASSWORD', ''); // Kein Passwort
 define('SMTP_FROM_EMAIL', 'noreply@ihredomain.com'); // Absender-E-Mail
-define('SMTP_FROM_NAME', 'Groupon App'); // Absendername
+define('SMTP_FROM_NAME', 'Groupons App'); // Absendername
 ```
 
 ### Konfiguration mit Gmail
@@ -511,7 +511,7 @@ define('SMTP_AUTH', true); // Authentifizierung erforderlich
 define('SMTP_USERNAME', 'ihre-email@gmail.com'); // Ihre Gmail-Adresse
 define('SMTP_PASSWORD', 'ihr-app-passwort'); // App-Passwort
 define('SMTP_FROM_EMAIL', 'ihre-email@gmail.com'); // Absender-E-Mail
-define('SMTP_FROM_NAME', 'Groupon App'); // Absendername
+define('SMTP_FROM_NAME', 'Groupons App'); // Absendername
 ```
 
 **Wichtiger Hinweis**: Für Gmail müssen Sie ein "App-Passwort" und nicht Ihr Hauptpasswort verwenden. Um ein App-Passwort zu erstellen:

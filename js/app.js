@@ -56,17 +56,20 @@ function addPalierField() {
     if (!paliersContainer) return;
     
     const palierIndex = document.querySelectorAll('.palier-row').length;
+    const commandeType = document.getElementById('type_commande');
+    const isRequired = commandeType && commandeType.value !== 'sans_frais';
+    const requiredAttr = isRequired ? 'required' : '';
     
     const palierHtml = `
         <div class="palier-row row mb-3">
             <div class="col-md-3">
-                <input type="number" name="paliers[${palierIndex}][min]" class="form-control" placeholder="Min" step="0.01" min="0" required>
+                <input type="number" name="paliers[${palierIndex}][min]" class="form-control palier-min" placeholder="Min" step="0.01" min="0" ${requiredAttr}>
             </div>
             <div class="col-md-3">
-                <input type="number" name="paliers[${palierIndex}][max]" class="form-control" placeholder="Max" step="0.01" min="0" required>
+                <input type="number" name="paliers[${palierIndex}][max]" class="form-control palier-max" placeholder="Max" step="0.01" min="0" ${requiredAttr}>
             </div>
             <div class="col-md-4">
-                <input type="number" name="paliers[${palierIndex}][frais]" class="form-control" placeholder="Frais (€)" step="0.01" min="0" required>
+                <input type="number" name="paliers[${palierIndex}][frais]" class="form-control palier-frais" placeholder="Frais (€)" step="0.01" min="0" ${requiredAttr}>
             </div>
             <div class="col-md-2">
                 <button type="button" class="btn btn-danger w-100" onclick="removePalier(this)">Supprimer</button>
@@ -87,21 +90,51 @@ function removePalier(button) {
 function updateCommandeTypeFields() {
     const commandeType = document.getElementById('type_commande');
     const paliersSectionTitle = document.getElementById('paliers-section-title');
+    const paliersContainer = document.getElementById('paliers-container');
+    const paliersCard = document.querySelector('#paliers-container')?.closest('.card');
     
-    if (!commandeType || !paliersSectionTitle) return;
+    if (!commandeType) return;
     
     const selectedType = commandeType.value;
     
-    switch (selectedType) {
-        case 'poids':
-            paliersSectionTitle.textContent = 'Paliers de frais de port par poids';
-            break;
-        case 'nombre':
-            paliersSectionTitle.textContent = 'Paliers de frais de port par nombre d\'articles';
-            break;
-        case 'montant':
-            paliersSectionTitle.textContent = 'Paliers de frais de port par montant';
-            break;
+    // Gérer l'affichage des paliers selon le type de commande
+    if (selectedType === 'sans_frais') {
+        // Masquer la section des paliers
+        if (paliersCard) {
+            paliersCard.style.display = 'none';
+        }
+        
+        // Enlever l'attribut required des champs de paliers
+        const palierInputs = document.querySelectorAll('.palier-min, .palier-max, .palier-frais');
+        palierInputs.forEach(input => {
+            input.removeAttribute('required');
+        });
+    } else {
+        // Afficher la section des paliers
+        if (paliersCard) {
+            paliersCard.style.display = 'block';
+        }
+        
+        // Remettre l'attribut required aux champs de paliers
+        const palierInputs = document.querySelectorAll('.palier-min, .palier-max, .palier-frais');
+        palierInputs.forEach(input => {
+            input.setAttribute('required', 'required');
+        });
+        
+        // Mettre à jour le titre selon le type
+        if (paliersSectionTitle) {
+            switch (selectedType) {
+                case 'poids':
+                    paliersSectionTitle.textContent = 'Paliers de frais de port par poids';
+                    break;
+                case 'nombre':
+                    paliersSectionTitle.textContent = 'Paliers de frais de port par nombre d\'articles';
+                    break;
+                case 'montant':
+                    paliersSectionTitle.textContent = 'Paliers de frais de port par montant';
+                    break;
+            }
+        }
     }
 }
 
@@ -117,6 +150,9 @@ function updateQuantity(variationId, increment) {
     if (value < 0) value = 0;
     
     inputElement.value = value;
+    
+    // Déclencher l'événement change pour s'assurer que la valeur est bien prise en compte
+    inputElement.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 // Fonction pour confirmer la suppression
@@ -129,19 +165,27 @@ function confirmDelete(message, formId) {
 
 // Fonction pour basculer le thème
 function toggleTheme() {
-    console.log("Fonction toggleTheme appelée");
     const body = document.body;
     
     if (body.classList.contains('dark-mode')) {
-        console.log("Passage au thème clair");
         // Passer au thème clair
         body.classList.remove('dark-mode');
         localStorage.setItem('theme', 'light');
         
-        // Mettre à jour l'état du switch si présent
+        // Changer la navbar
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+            navbar.className = navbar.className.replace('navbar-dark bg-dark', 'navbar-light bg-light');
+        }
+        
+        // Mettre à jour l'état des switches si présents
         const themeSwitch = document.getElementById('theme-switch');
+        const themeSwitchMobile = document.getElementById('theme-switch-mobile');
         if (themeSwitch) {
             themeSwitch.checked = false;
+        }
+        if (themeSwitchMobile) {
+            themeSwitchMobile.checked = false;
         }
         
         // Supprimer la feuille de style du thème sombre si elle existe
@@ -155,21 +199,30 @@ function toggleTheme() {
         fetch('toggle_theme.php?theme=light', { method: 'GET' })
             .then(response => response.json())
             .then(data => {
-                console.log('Thème enregistré côté serveur:', data.theme);
+                // Thème enregistré côté serveur
             })
             .catch(error => {
                 console.error('Erreur lors de l\'enregistrement du thème:', error);
             });
     } else {
-        console.log("Passage au thème sombre");
         // Passer au thème sombre
         body.classList.add('dark-mode');
         localStorage.setItem('theme', 'dark');
         
-        // Mettre à jour l'état du switch si présent
+        // Changer la navbar
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+            navbar.className = navbar.className.replace('navbar-light bg-light', 'navbar-dark bg-dark');
+        }
+        
+        // Mettre à jour l'état des switches si présents
         const themeSwitch = document.getElementById('theme-switch');
+        const themeSwitchMobile = document.getElementById('theme-switch-mobile');
         if (themeSwitch) {
             themeSwitch.checked = true;
+        }
+        if (themeSwitchMobile) {
+            themeSwitchMobile.checked = true;
         }
         
         // Ajouter la feuille de style du thème sombre si elle n'existe pas
@@ -184,7 +237,7 @@ function toggleTheme() {
         fetch('toggle_theme.php?theme=dark', { method: 'GET' })
             .then(response => response.json())
             .then(data => {
-                console.log('Thème enregistré côté serveur:', data.theme);
+                // Thème enregistré côté serveur
             })
             .catch(error => {
                 console.error('Erreur lors de l\'enregistrement du thème:', error);
@@ -194,15 +247,11 @@ function toggleTheme() {
 
 // Initialisation du thème au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOMContentLoaded - Initialisation du thème");
-    
     // Récupérer le thème depuis le localStorage ou utiliser le thème clair par défaut
     const savedTheme = localStorage.getItem('theme') || 'light';
-    console.log("Thème sauvegardé:", savedTheme);
     
     // Appliquer le thème sauvegardé
     if (savedTheme === 'dark') {
-        console.log("Application du thème sombre au chargement");
         document.body.classList.add('dark-mode');
         
         // Ajouter la feuille de style du thème sombre
@@ -213,13 +262,22 @@ document.addEventListener('DOMContentLoaded', function() {
             document.head.appendChild(darkThemeLink);
         }
         
-        // Mettre à jour l'état du switch si présent
+        // Mettre à jour la navbar
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+            navbar.className = navbar.className.replace('navbar-light bg-light', 'navbar-dark bg-dark');
+        }
+        
+        // Mettre à jour l'état des switches si présents
         const themeSwitch = document.getElementById('theme-switch');
+        const themeSwitchMobile = document.getElementById('theme-switch-mobile');
         if (themeSwitch) {
             themeSwitch.checked = true;
         }
+        if (themeSwitchMobile) {
+            themeSwitchMobile.checked = true;
+        }
     } else {
-        console.log("Application du thème clair au chargement");
         document.body.classList.remove('dark-mode');
         
         // Supprimer la feuille de style du thème sombre si elle existe
@@ -229,18 +287,32 @@ document.addEventListener('DOMContentLoaded', function() {
             darkThemeLink.parentNode.removeChild(darkThemeLink);
         }
         
-        // Mettre à jour l'état du switch si présent
+        // Mettre à jour la navbar
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+            navbar.className = navbar.className.replace('navbar-dark bg-dark', 'navbar-light bg-light');
+        }
+        
+        // Mettre à jour l'état des switches si présents
         const themeSwitch = document.getElementById('theme-switch');
+        const themeSwitchMobile = document.getElementById('theme-switch-mobile');
         if (themeSwitch) {
             themeSwitch.checked = false;
         }
+        if (themeSwitchMobile) {
+            themeSwitchMobile.checked = false;
+        }
     }
     
-    // Ajouter l'écouteur d'événement pour le switch de thème
+    // Ajouter l'écouteur d'événement pour les switches de thème
     const themeSwitch = document.getElementById('theme-switch');
+    const themeSwitchMobile = document.getElementById('theme-switch-mobile');
+    
     if (themeSwitch) {
-        console.log("Ajout de l'écouteur d'événement pour le switch de thème");
         themeSwitch.addEventListener('change', toggleTheme);
+    }
+    if (themeSwitchMobile) {
+        themeSwitchMobile.addEventListener('change', toggleTheme);
     }
     
     // Initialiser les tooltips
@@ -286,6 +358,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const dropdownMenu = this.querySelector('.dropdown-menu');
             if (dropdownMenu) {
                 dropdownMenu.classList.remove('show');
+            }
+        });
+    });
+    
+    // Ajouter des écouteurs pour les champs de quantité
+    document.querySelectorAll('input[name^="quantity["]').forEach(function(input) {
+        input.addEventListener('change', function() {
+            // S'assurer que la valeur est un entier positif
+            let value = parseInt(this.value, 10);
+            if (isNaN(value) || value < 0) {
+                value = 0;
+            }
+            this.value = value;
+        });
+        
+        input.addEventListener('input', function() {
+            // Empêcher la saisie de valeurs négatives
+            if (this.value < 0) {
+                this.value = 0;
             }
         });
     });

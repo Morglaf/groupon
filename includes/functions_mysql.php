@@ -493,7 +493,7 @@ function getUserIdByEmail($email) {
  * @param string $prenom Prénom
  * @return array|null Données de l'utilisateur ou null si échec
  */
-function createUser($prenom, $nom, $email, $password) {
+function createUser($prenom, $nom, $email, $password, $telephone = null) {
     if (!isValidEmail($email)) {
         return null;
     }
@@ -508,6 +508,7 @@ function createUser($prenom, $nom, $email, $password) {
         'email' => $email,
         'nom' => $nom,
         'prenom' => $prenom,
+        'telephone' => $telephone,
         'password_hash' => password_hash($password, PASSWORD_DEFAULT),
         'date_inscription' => (new DateTime())->format('Y-m-d H:i:s')
     ];
@@ -561,11 +562,45 @@ function authenticateUser($email, $password) {
  * @return bool Succès ou échec
  */
 function sendEmail($to, $subject, $message) {
-    $headers = "From: " . EMAIL_FROM . "\r\n";
-    $headers .= "MIME-Version: 1.0\r\n";
-    $headers .= "Content-type: text/html; charset=UTF-8\r\n";
+    // Vérifier si les paramètres sont valides
+    if (empty($to) || empty($subject) || empty($message)) {
+        error_log('Erreur sendEmail: Paramètres manquants');
+        return false;
+    }
     
-    return mail($to, $subject, $message, $headers);
+    // Vérifier si l'email de destination est valide
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        error_log('Erreur sendEmail: Email de destination invalide: ' . $to);
+        return false;
+    }
+    
+    // Préparer les en-têtes
+    $headers = [];
+    $headers[] = "From: " . SMTP_FROM_NAME . " <" . SMTP_FROM_EMAIL . ">";
+    $headers[] = "Reply-To: " . SMTP_FROM_EMAIL;
+    $headers[] = "MIME-Version: 1.0";
+    $headers[] = "Content-type: text/html; charset=UTF-8";
+    $headers[] = "X-Mailer: PHP/" . phpversion();
+    
+    $headers_string = implode("\r\n", $headers);
+    
+    // Si SMTP est configuré avec authentification, utiliser PHPMailer ou une solution SMTP
+    if (SMTP_AUTH && !empty(SMTP_USERNAME) && !empty(SMTP_PASSWORD)) {
+        // Pour une configuration SMTP avancée, on pourrait utiliser PHPMailer
+        // Pour l'instant, on utilise la fonction mail() avec les en-têtes SMTP
+        error_log('Configuration SMTP avec authentification détectée - utilisation de mail() basique');
+    }
+    
+    // Utiliser la fonction mail() de PHP
+    $result = mail($to, $subject, $message, $headers_string);
+    
+    if (!$result) {
+        error_log('Erreur sendEmail: Échec de l\'envoi vers ' . $to);
+    } else {
+        error_log('Email envoyé avec succès vers ' . $to);
+    }
+    
+    return $result;
 }
 
 /**
@@ -687,7 +722,7 @@ function generateCommandePDF($commande_id) {
         
         // Titre
         $pdf->SetFont('helvetica', 'B', 16);
-        $pdf->Cell(0, 10, $commande_data['titre'], 0, 1, 'C');
+        $pdf->Cell(0, 10, 'RÉSUMÉ ENTREPRISE - ' . strtoupper($commande_data['titre']), 0, 1, 'C');
         $pdf->Ln(5);
         
         // Informations générales
@@ -712,77 +747,115 @@ function generateCommandePDF($commande_id) {
         
         $pdf->Ln(5);
         
-        // Produits
-        if (!empty($commande_data['produits'])) {
+        // Résumé global des produits commandés
+        if (!empty($commande_data['participants'])) {
             $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->Cell(0, 8, 'Produits disponibles', 0, 1);
+            $pdf->Cell(0, 8, 'RÉSUMÉ GLOBAL DES COMMANDES', 0, 1);
             $pdf->SetFont('helvetica', '', 9);
             
-            foreach ($commande_data['produits'] as $produit) {
-                $pdf->SetFont('helvetica', 'B', 10);
-                $pdf->Cell(0, 6, $produit['nom'], 0, 1);
-                
-                if (!empty($produit['url'])) {
-                    $pdf->SetFont('helvetica', '', 8);
-                    $pdf->Cell(0, 4, 'Lien: ' . $produit['url'], 0, 1);
-                }
-                
-                // Variations
-                if (!empty($produit['variations'])) {
-                    $pdf->SetFont('helvetica', '', 9);
-                    $pdf->Cell(40, 5, 'Variation', 1, 0, 'C');
-                    $pdf->Cell(30, 5, 'Poids (kg)', 1, 0, 'C');
-                    $pdf->Cell(30, 5, 'Prix (€)', 1, 1, 'C');
-                    
-                    foreach ($produit['variations'] as $variation) {
-                        $pdf->Cell(40, 5, $variation['nom'], 1, 0, 'L');
-                        $pdf->Cell(30, 5, number_format($variation['poids'], 2, ',', ' '), 1, 0, 'R');
-                        $pdf->Cell(30, 5, number_format($variation['prix'], 2, ',', ' '), 1, 1, 'R');
+            // Calculer le total par variation
+            $totaux_variations = [];
+            foreach ($commande_data['participants'] as $participant) {
+                if (!empty($participant['commandes'])) {
+                    foreach ($participant['commandes'] as $article) {
+                        $variation_id = $article['variation_id'];
+                        if (!isset($totaux_variations[$variation_id])) {
+                            $totaux_variations[$variation_id] = [
+                                'quantite' => 0,
+                                'variation_info' => null
+                            ];
+                        }
+                        $totaux_variations[$variation_id]['quantite'] += $article['quantite'];
+                        
+                        // Récupérer les infos de la variation
+                        if (!$totaux_variations[$variation_id]['variation_info']) {
+                            foreach ($commande_data['produits'] as $produit) {
+                                foreach ($produit['variations'] as $variation) {
+                                    if ($variation['id'] == $variation_id) {
+                                        $totaux_variations[$variation_id]['variation_info'] = [
+                                            'produit_nom' => $produit['nom'],
+                                            'variation_nom' => $variation['nom'],
+                                            'prix' => $variation['prix']
+                                        ];
+                                        break 2;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+            }
+            
+            // Afficher le résumé
+            if (!empty($totaux_variations)) {
+                $pdf->SetFont('helvetica', 'B', 9);
+                $pdf->Cell(60, 5, 'Produit - Variation', 1, 0, 'C');
+                $pdf->Cell(25, 5, 'Quantité', 1, 0, 'C');
+                $pdf->Cell(25, 5, 'Prix unit.', 1, 0, 'C');
+                $pdf->Cell(30, 5, 'Total', 1, 1, 'C');
                 
-                $pdf->Ln(3);
+                foreach ($totaux_variations as $variation_id => $data) {
+                    $variation_info = $data['variation_info'];
+                    if ($variation_info) {
+                        $pdf->SetFont('helvetica', '', 8);
+                        $pdf->Cell(60, 5, $variation_info['produit_nom'] . ' - ' . $variation_info['variation_nom'], 1, 0, 'L');
+                        $pdf->Cell(25, 5, $data['quantite'], 1, 0, 'C');
+                        $pdf->Cell(25, 5, number_format($variation_info['prix'], 2, ',', ' ') . ' €', 1, 0, 'R');
+                        $pdf->Cell(30, 5, number_format($variation_info['prix'] * $data['quantite'], 2, ',', ' ') . ' €', 1, 1, 'R');
+                    }
+                }
             }
         }
         
-        // Paliers de frais
-        if (!empty($commande_data['paliers_frais'])) {
-            $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->Cell(0, 8, 'Paliers de frais de port', 0, 1);
-            $pdf->SetFont('helvetica', '', 9);
-            
-            $pdf->Cell(40, 5, 'Min (kg)', 1, 0, 'C');
-            $pdf->Cell(40, 5, 'Max (kg)', 1, 0, 'C');
-            $pdf->Cell(40, 5, 'Frais (€)', 1, 1, 'C');
-            
-            foreach ($commande_data['paliers_frais'] as $palier) {
-                $pdf->Cell(40, 5, number_format($palier['min'], 2, ',', ' '), 1, 0, 'R');
-                $pdf->Cell(40, 5, $palier['max'] ? number_format($palier['max'], 2, ',', ' ') : '∞', 1, 0, 'R');
-                $pdf->Cell(40, 5, number_format($palier['frais'], 2, ',', ' '), 1, 1, 'R');
-            }
-        }
-        
-        // Participants
+        // Résumé par participant avec colis
         if (!empty($commande_data['participants'])) {
             $pdf->AddPage();
             $pdf->SetFont('helvetica', 'B', 12);
-            $pdf->Cell(0, 8, 'Participants', 0, 1);
+            $pdf->Cell(0, 8, 'COLIS PAR PARTICIPANT', 0, 1);
             $pdf->SetFont('helvetica', '', 9);
             
             foreach ($commande_data['participants'] as $participant) {
                 $user_data = getUserData($participant['user_id']);
                 $user_name = $user_data ? $user_data['prenom'] . ' ' . $user_data['nom'] : 'Utilisateur #' . $participant['user_id'];
                 
-                $pdf->SetFont('helvetica', 'B', 10);
-                $pdf->Cell(0, 6, $user_name, 0, 1);
+                $pdf->SetFont('helvetica', 'B', 11);
+                $pdf->Cell(0, 6, 'Colis: ' . $user_name, 0, 1);
                 
-                $pdf->SetFont('helvetica', '', 9);
-                $pdf->Cell(0, 4, 'Montant produits: ' . number_format($participant['montant_produits'], 2, ',', ' ') . ' €', 0, 1);
-                $pdf->Cell(0, 4, 'Part frais de port: ' . number_format($participant['part_frais_port'], 2, ',', ' ') . ' €', 0, 1);
-                $pdf->Cell(0, 4, 'Total: ' . number_format($participant['montant_total'], 2, ',', ' ') . ' €', 0, 1);
-                $pdf->Cell(0, 4, 'Statut paiement: ' . ($participant['statut_paiement'] ? 'Payé' : 'Non payé'), 0, 1);
+                // Produits du colis
+                if (!empty($participant['commandes'])) {
+                    $pdf->SetFont('helvetica', 'B', 9);
+                    $pdf->Cell(0, 4, 'Contenu du colis:', 0, 1);
+                    
+                    foreach ($participant['commandes'] as $article) {
+                        // Trouver les infos de la variation
+                        $variation_info = null;
+                        foreach ($commande_data['produits'] as $produit) {
+                            foreach ($produit['variations'] as $variation) {
+                                if ($variation['id'] == $article['variation_id']) {
+                                    $variation_info = [
+                                        'produit_nom' => $produit['nom'],
+                                        'variation_nom' => $variation['nom'],
+                                        'prix' => $variation['prix']
+                                    ];
+                                    break 2;
+                                }
+                            }
+                        }
+                        
+                        if ($variation_info) {
+                            $pdf->SetFont('helvetica', '', 8);
+                            $pdf->Cell(10, 4, '', 0, 0); // Indentation
+                            $pdf->Cell(0, 4, '• ' . $variation_info['produit_nom'] . ' - ' . $variation_info['variation_nom'] . ' (x' . $article['quantite'] . ') - ' . number_format($variation_info['prix'] * $article['quantite'], 2, ',', ' ') . ' €', 0, 1);
+                        }
+                    }
+                }
                 
-                $pdf->Ln(3);
+                // Total du colis
+                $pdf->SetFont('helvetica', 'B', 9);
+                $pdf->Cell(0, 4, 'Total colis: ' . number_format($participant['montant_total'], 2, ',', ' ') . ' €', 0, 1);
+                $pdf->Cell(0, 4, 'Statut: ' . ($participant['statut_paiement'] ? 'PAYE' : 'NON PAYE'), 0, 1);
+                
+                $pdf->Ln(5);
             }
         }
         
@@ -798,6 +871,259 @@ function generateCommandePDF($commande_id) {
     } catch (Exception $e) {
         error_log('Erreur generateCommandePDF: ' . $e->getMessage());
         return null;
+    }
+}
+
+/**
+ * Génère un PDF de checklist pour la commande avec cases à cocher
+ * @param string $commande_id ID de la commande
+ * @return string|null Chemin du fichier PDF généré ou null si échec
+ */
+function generateCommandeChecklistPDF($commande_id) {
+    try {
+        // Vérifier si TCPDF est disponible
+        if (!class_exists('TCPDF')) {
+            error_log('TCPDF non disponible pour generateCommandeChecklistPDF');
+            return null;
+        }
+        
+        $commande_data = getCommandeData($commande_id);
+        if (!$commande_data) {
+            return null;
+        }
+        
+        // Créer une instance TCPDF
+        $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+        
+        // Informations du document
+        $app_name = defined('APP_NAME') ? APP_NAME : 'Groupon';
+        $pdf->SetCreator($app_name);
+        $pdf->SetAuthor($app_name);
+        $pdf->SetTitle('Checklist: ' . $commande_data['titre']);
+        $pdf->SetSubject('Liste de contrôle - Commande groupée');
+        
+        // Marges
+        $pdf->SetMargins(15, 20, 15);
+        $pdf->SetHeaderMargin(10);
+        $pdf->SetFooterMargin(10);
+        
+        // Police par défaut
+        $pdf->SetFont('helvetica', '', 10);
+        
+        // Ajouter une page
+        $pdf->AddPage();
+        
+        // Titre
+        $pdf->SetFont('helvetica', 'B', 16);
+        $pdf->Cell(0, 10, 'LISTE DE CONTRÔLE - ' . strtoupper($commande_data['titre']), 0, 1, 'C');
+        $pdf->Ln(5);
+        
+        // Informations générales
+        $pdf->SetFont('helvetica', 'B', 12);
+        $pdf->Cell(0, 6, 'Informations de la commande', 0, 1);
+        $pdf->SetFont('helvetica', '', 10);
+        
+        $pdf->Cell(40, 5, 'Date limite:', 0, 0);
+        $pdf->Cell(0, 5, date('d/m/Y', strtotime($commande_data['date_limite'])), 0, 1);
+        
+        $pdf->Cell(40, 5, 'Récupération:', 0, 0);
+        $pdf->Cell(0, 5, date('d/m/Y', strtotime($commande_data['date_recuperation'])), 0, 1);
+        
+        $pdf->Cell(40, 5, 'Adresse:', 0, 0);
+        $pdf->Cell(0, 5, $commande_data['adresse_recuperation'], 0, 1);
+        
+        $pdf->Ln(5);
+        
+        // Section Participants et Produits
+        if (!empty($commande_data['participants'])) {
+            $pdf->SetFont('helvetica', 'B', 12);
+            $pdf->Cell(0, 8, 'PARTICIPANTS ET PRODUITS', 0, 1);
+            $pdf->Ln(2);
+            
+            foreach ($commande_data['participants'] as $participant) {
+                $user_data = getUserData($participant['user_id']);
+                $user_name = $user_data ? $user_data['prenom'] . ' ' . $user_data['nom'] : 'Utilisateur #' . $participant['user_id'];
+                
+                // Nom du participant avec case à cocher
+                $pdf->SetFont('helvetica', 'B', 11);
+                $pdf->Cell(5, 6, '[ ]', 0, 0); // Case à cocher simple
+                $pdf->Cell(0, 6, $user_name, 0, 1);
+                
+                // Contact (email et téléphone)
+                $pdf->SetFont('helvetica', '', 8);
+                $pdf->Cell(10, 4, '', 0, 0); // Indentation
+                $pdf->Cell(0, 4, 'Email: ' . $user_data['email'], 0, 1);
+                if (!empty($user_data['telephone'])) {
+                    $pdf->Cell(10, 4, '', 0, 0); // Indentation
+                    $pdf->Cell(0, 4, 'Tel: ' . $user_data['telephone'], 0, 1);
+                }
+                
+                // Informations financières
+                $pdf->SetFont('helvetica', '', 9);
+                $pdf->Cell(10, 4, '', 0, 0); // Indentation
+                $pdf->Cell(0, 4, 'Montant produits: ' . number_format($participant['montant_produits'], 2, ',', ' ') . ' €', 0, 1);
+                
+                if ($commande_data['type_commande'] !== 'sans_frais') {
+                    $pdf->Cell(10, 4, '', 0, 0);
+                    $pdf->Cell(0, 4, 'Part frais de port: ' . number_format($participant['part_frais_port'], 2, ',', ' ') . ' €', 0, 1);
+                }
+                
+                $pdf->Cell(10, 4, '', 0, 0);
+                $pdf->Cell(0, 4, 'Total: ' . number_format($participant['montant_total'], 2, ',', ' ') . ' €', 0, 1);
+                
+                // Statut paiement avec case à cocher
+                $pdf->Cell(10, 4, '', 0, 0);
+                $pdf->Cell(5, 4, $participant['statut_paiement'] ? '[X]' : '[ ]', 0, 0);
+                $pdf->Cell(0, 4, ' Paiement reçu', 0, 1);
+                
+                // Produits du participant
+                if (!empty($participant['commandes'])) {
+                    $pdf->Cell(10, 4, '', 0, 0);
+                    $pdf->SetFont('helvetica', 'B', 9);
+                    $pdf->Cell(0, 4, 'Produits commandés:', 0, 1);
+                    
+                    foreach ($participant['commandes'] as $article) {
+                        // Trouver les infos de la variation
+                        $variation_info = null;
+                        foreach ($commande_data['produits'] as $produit) {
+                            foreach ($produit['variations'] as $variation) {
+                                if ($variation['id'] == $article['variation_id']) {
+                                    $variation_info = [
+                                        'produit_nom' => $produit['nom'],
+                                        'variation_nom' => $variation['nom'],
+                                        'prix' => $variation['prix']
+                                    ];
+                                    break 2;
+                                }
+                            }
+                        }
+                        
+                        if ($variation_info) {
+                            $pdf->Cell(15, 4, '', 0, 0); // Indentation supplémentaire
+                            $pdf->SetFont('helvetica', '', 8);
+                            $pdf->Cell(5, 4, '[ ]', 0, 0); // Case à cocher pour le produit
+                            $pdf->Cell(0, 4, $variation_info['produit_nom'] . ' - ' . $variation_info['variation_nom'] . ' (x' . $article['quantite'] . ') - ' . number_format($variation_info['prix'] * $article['quantite'], 2, ',', ' ') . ' €', 0, 1);
+                        }
+                    }
+                }
+                
+                $pdf->Ln(3);
+            }
+        }
+        
+        $pdf->Ln(5);
+        
+        // Section Notes
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->Cell(0, 6, 'Notes:', 0, 1);
+        $pdf->SetFont('helvetica', '', 9);
+        
+        // Lignes pour les notes
+        for ($i = 0; $i < 8; $i++) {
+            $pdf->Cell(0, 4, '_________________________________________________', 0, 1);
+        }
+        
+        // Générer le nom de fichier
+        $filename = 'checklist_' . $commande_id . '_' . date('Ymd_His') . '.pdf';
+        $file_path = DATA_DIR . '/exports/' . $filename;
+        
+        // Sauvegarder le PDF
+        $pdf->Output($file_path, 'F');
+        
+        return $file_path;
+        
+    } catch (Exception $e) {
+        error_log('Erreur generateCommandeChecklistPDF: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Récupère les données de l'utilisateur connecté
+ * @return array|null Données de l'utilisateur ou null si non connecté
+ */
+function getCurrentUserData() {
+    if (!isLoggedIn()) {
+        return null;
+    }
+    
+    return getUserData($_SESSION['user_id']);
+}
+
+/**
+ * Met à jour le profil d'un utilisateur
+ * @param string $user_id ID de l'utilisateur
+ * @param array $data Données à mettre à jour
+ * @return bool Succès ou échec
+ */
+function updateUserProfile($user_id, $data) {
+    try {
+        $pdo = getDB();
+        
+        // Vérifier si la colonne telephone existe
+        $stmt = $pdo->query("SHOW COLUMNS FROM " . DB_PREFIX . "users LIKE 'telephone'");
+        $column = $stmt->fetch();
+        
+        if ($column) {
+            // Colonne telephone existe
+            $stmt = $pdo->prepare("
+                UPDATE " . DB_PREFIX . "users 
+                SET prenom = ?, nom = ?, email = ?, telephone = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            
+            return $stmt->execute([
+                $data['prenom'],
+                $data['nom'],
+                $data['email'],
+                $data['telephone'],
+                $user_id
+            ]);
+        } else {
+            // Colonne telephone n'existe pas encore
+            $stmt = $pdo->prepare("
+                UPDATE " . DB_PREFIX . "users 
+                SET prenom = ?, nom = ?, email = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            
+            return $stmt->execute([
+                $data['prenom'],
+                $data['nom'],
+                $data['email'],
+                $user_id
+            ]);
+        }
+        
+    } catch (PDOException $e) {
+        error_log('Erreur updateUserProfile: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Met à jour le mot de passe d'un utilisateur
+ * @param string $user_id ID de l'utilisateur
+ * @param string $new_password Nouveau mot de passe
+ * @return bool Succès ou échec
+ */
+function updateUserPassword($user_id, $new_password) {
+    try {
+        $pdo = getDB();
+        
+        $password_hash = password_hash($new_password, PASSWORD_DEFAULT);
+        
+        $stmt = $pdo->prepare("
+            UPDATE " . DB_PREFIX . "users 
+            SET password_hash = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        
+        return $stmt->execute([$password_hash, $user_id]);
+        
+    } catch (PDOException $e) {
+        error_log('Erreur updateUserPassword: ' . $e->getMessage());
+        return false;
     }
 }
 
@@ -931,7 +1257,7 @@ function createCommande($user_id, $titre, $type_commande, $date_limite, $date_re
             (id, titre, admin_id, description, type_commande, date_creation, date_limite, 
              date_recuperation, adresse_recuperation, montant_total, poids_total, 
              frais_port, public) 
-            VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, 0, 0, 0, 1)
+            VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, 0, 0, 0, 0)
         ");
         $stmt->execute([
             $commande_id,
@@ -1073,11 +1399,11 @@ function importCommandeJSON($json_content, $user_id) {
         
         // Insérer la commande principale
         $stmt = getDB()->prepare("
-            INSERT INTO commandes (
+            INSERT INTO " . DB_PREFIX . "commandes (
                 id, titre, description, type_commande, date_limite, date_recuperation,
-                adresse_recuperation, montant_total, poids_total, frais_port, statut,
-                admin_id, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                adresse_recuperation, montant_total, poids_total, frais_port, public,
+                admin_id, date_creation, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ");
         
         $stmt->execute([
@@ -1091,8 +1417,9 @@ function importCommandeJSON($json_content, $user_id) {
             $data['montant_total'] ?? 0,
             $data['poids_total'] ?? 0,
             $data['frais_port'] ?? 0,
-            $data['statut'] ?? 'active',
-            $user_id
+            $data['public'] ?? 1,
+            $user_id,
+            $data['date_limite']
         ]);
         
         // Importer les produits
@@ -1101,7 +1428,7 @@ function importCommandeJSON($json_content, $user_id) {
                 $produit_id = generateUniqueId();
                 
                 $stmt = getDB()->prepare("
-                    INSERT INTO produits (id, commande_id, nom, url, created_at)
+                    INSERT INTO " . DB_PREFIX . "produits (id, commande_id, nom, url, created_at)
                     VALUES (?, ?, ?, ?, NOW())
                 ");
                 
@@ -1118,7 +1445,7 @@ function importCommandeJSON($json_content, $user_id) {
                         $variation_id = generateUniqueId();
                         
                         $stmt = getDB()->prepare("
-                            INSERT INTO variations (id, produit_id, nom, poids, prix, created_at)
+                            INSERT INTO " . DB_PREFIX . "variations (id, produit_id, nom, poids, prix, created_at)
                             VALUES (?, ?, ?, ?, ?, NOW())
                         ");
                         
@@ -1140,7 +1467,7 @@ function importCommandeJSON($json_content, $user_id) {
                 $palier_id = generateUniqueId();
                 
                 $stmt = getDB()->prepare("
-                    INSERT INTO paliers_frais (id, commande_id, min_poids, max_poids, frais, created_at)
+                    INSERT INTO " . DB_PREFIX . "paliers_frais (id, commande_id, min_value, max_value, frais, created_at)
                     VALUES (?, ?, ?, ?, ?, NOW())
                 ");
                 
@@ -1163,7 +1490,7 @@ function importCommandeJSON($json_content, $user_id) {
                     $participant_id = generateUniqueId();
                     
                     $stmt = getDB()->prepare("
-                        INSERT INTO participants (
+                        INSERT INTO " . DB_PREFIX . "participants (
                             id, commande_id, user_id, montant_produits, part_frais_port,
                             montant_total, statut_paiement, created_at
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
@@ -1215,6 +1542,47 @@ function addParticipant($commande_id, $user_id) {
         return $stmt->execute([$participant_id, $commande_id, $user_id]);
     } catch (PDOException $e) {
         error_log('Erreur addParticipant: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Retire un participant d'une commande
+ * @param string $commande_id ID de la commande
+ * @param string $user_id ID de l'utilisateur
+ * @return bool Succès ou échec
+ */
+function removeParticipant($commande_id, $user_id) {
+    try {
+        $pdo = getDB();
+        $pdo->beginTransaction();
+        
+        // Supprimer les articles commandés du participant
+        $stmt = $pdo->prepare("
+            DELETE ac FROM " . DB_PREFIX . "articles_commandes ac
+            INNER JOIN " . DB_PREFIX . "participants p ON ac.participant_id = p.id
+            WHERE p.commande_id = ? AND p.user_id = ?
+        ");
+        $stmt->execute([$commande_id, $user_id]);
+        
+        // Supprimer le participant
+        $stmt = $pdo->prepare("
+            DELETE FROM " . DB_PREFIX . "participants 
+            WHERE commande_id = ? AND user_id = ?
+        ");
+        $result = $stmt->execute([$commande_id, $user_id]);
+        
+        $pdo->commit();
+        
+        // Recalculer les totaux de la commande
+        if ($result) {
+            recalculateCommandeTotals($commande_id);
+        }
+        
+        return $result;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log('Erreur removeParticipant: ' . $e->getMessage());
         return false;
     }
 }
@@ -1283,22 +1651,36 @@ function addArticle($commande_id, $user_id, $variation_id, $quantite) {
         
         $success = false;
         if ($existing) {
-            // Mettre à jour la quantité
-            $stmt = $pdo->prepare("
-                UPDATE " . DB_PREFIX . "articles_commandes 
-                SET quantite = ?, updated_at = NOW() 
-                WHERE participant_id = ? AND variation_id = ?
-            ");
-            $success = $stmt->execute([$quantite, $participant_id, $variation_id]);
+            if ($quantite > 0) {
+                // Mettre à jour la quantité
+                $stmt = $pdo->prepare("
+                    UPDATE " . DB_PREFIX . "articles_commandes 
+                    SET quantite = ?, updated_at = NOW() 
+                    WHERE participant_id = ? AND variation_id = ?
+                ");
+                $success = $stmt->execute([$quantite, $participant_id, $variation_id]);
+            } else {
+                // Supprimer l'article si la quantité est 0
+                $stmt = $pdo->prepare("
+                    DELETE FROM " . DB_PREFIX . "articles_commandes 
+                    WHERE participant_id = ? AND variation_id = ?
+                ");
+                $success = $stmt->execute([$participant_id, $variation_id]);
+            }
         } else {
-            // Créer un nouvel article
-            $article_id = generateUniqueId();
-            $stmt = $pdo->prepare("
-                INSERT INTO " . DB_PREFIX . "articles_commandes 
-                (id, participant_id, variation_id, quantite, created_at) 
-                VALUES (?, ?, ?, ?, NOW())
-            ");
-            $success = $stmt->execute([$article_id, $participant_id, $variation_id, $quantite]);
+            // Créer un nouvel article seulement si la quantité est > 0
+            if ($quantite > 0) {
+                $article_id = generateUniqueId();
+                $stmt = $pdo->prepare("
+                    INSERT INTO " . DB_PREFIX . "articles_commandes 
+                    (id, participant_id, variation_id, quantite, created_at) 
+                    VALUES (?, ?, ?, ?, NOW())
+                ");
+                $success = $stmt->execute([$article_id, $participant_id, $variation_id, $quantite]);
+            } else {
+                // Si la quantité est 0 et l'article n'existe pas, considérer comme succès
+                $success = true;
+            }
         }
         
         // Recalculer les montants du participant
@@ -1413,12 +1795,17 @@ function updatePaiementStatus($commande_id, $user_id, $statut_paiement) {
 /**
  * Calcule les frais de port selon les paliers définis
  * @param string $commande_id ID de la commande
- * @param string $type_commande Type de commande (poids, nombre, montant)
+ * @param string $type_commande Type de commande (poids, nombre, montant, sans_frais)
  * @param float $valeur Valeur à évaluer
  * @return float Frais de port calculés
  */
 function calculateFraisPort($commande_id, $type_commande, $valeur) {
     try {
+        // Si le type de commande est "sans_frais", retourner 0
+        if ($type_commande === 'sans_frais') {
+            return 0.0;
+        }
+        
         $pdo = getDB();
         
         // Trouver le palier correspondant
@@ -1824,6 +2211,7 @@ function duplicateCommande($commande_id, $user_id) {
             $commande_data['date_limite'],
             $commande_data['date_recuperation'],
             $commande_data['adresse_recuperation'],
+            $commande_data['description'] ?? '',
             $commande_data['paliers_frais'],
             $commande_data['produits']
         );
@@ -1956,5 +2344,63 @@ function getCommandePaliers($commande_id) {
         error_log('Erreur getCommandePaliers: ' . $e->getMessage());
         return [];
     }
+}
+
+/**
+ * Vérifie un token Turnstile avec Cloudflare
+ * @param string $token Token Turnstile à vérifier
+ * @return bool True si la vérification réussit, false sinon
+ */
+function verifyTurnstile($token) {
+    // Vérifier si Turnstile est activé
+    if (!defined('USE_TURNSTILE') || !USE_TURNSTILE) {
+        return true; // Si Turnstile n'est pas activé, considérer comme valide
+    }
+    
+    // Vérifier si les clés sont configurées
+    if (!defined('TURNSTILE_SECRET_KEY') || empty(TURNSTILE_SECRET_KEY)) {
+        error_log('Erreur Turnstile: Clé secrète non configurée');
+        return false;
+    }
+    
+    if (empty($token)) {
+        return false;
+    }
+    
+    // Préparer les données pour l'API Cloudflare
+    $data = [
+        'secret' => TURNSTILE_SECRET_KEY,
+        'response' => $token,
+        'remoteip' => $_SERVER['REMOTE_ADDR'] ?? ''
+    ];
+    
+    // Effectuer la requête à l'API Cloudflare
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => 'Content-Type: application/x-www-form-urlencoded',
+            'content' => http_build_query($data),
+            'timeout' => 10
+        ]
+    ]);
+    
+    $response = file_get_contents('https://challenges.cloudflare.com/turnstile/v0/siteverify', false, $context);
+    
+    if ($response === false) {
+        error_log('Erreur Turnstile: Impossible de contacter l\'API Cloudflare');
+        return false;
+    }
+    
+    $result = json_decode($response, true);
+    
+    if (!$result) {
+        error_log('Erreur Turnstile: Réponse JSON invalide de l\'API');
+        return false;
+    }
+    
+    // Log pour debug (à retirer en production)
+    error_log('Turnstile verification result: ' . json_encode($result));
+    
+    return isset($result['success']) && $result['success'] === true;
 }
 ?>

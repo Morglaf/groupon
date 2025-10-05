@@ -1,4 +1,4 @@
-# Groupon - Group Orders Application
+# Groupons - Group Orders Application
 
 ## 📝 Table of Contents
 - [Overview](#overview)
@@ -12,7 +12,7 @@
 - [Contribution](#contribution)
 
 ## Overview
-**Groupon** is a modern web application for organizing group orders between friends, colleagues, or neighbors. Optimize your delivery costs by grouping your purchases! The application uses MySQL as the primary database for optimal performance and reliability.
+**Groupons** is a modern web application for organizing group orders between friends, colleagues, or neighbors. Optimize your delivery costs by grouping your purchases! The application uses MySQL as the primary database for optimal performance and reliability.
 
 ## Features
 - 🔐 Complete authentication system (login, registration, logout)

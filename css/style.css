@@ -9,8 +9,65 @@ footer {
     margin-top: auto;
 }
 
+/* Styles du footer */
+.footer-custom {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+.footer-text {
+    color: #6c757d;
+}
+
+.footer-text h5 {
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+/* Placeholders pour le thème clair */
+input::placeholder,
+textarea::placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input::-webkit-input-placeholder,
+textarea::-webkit-input-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input:-ms-input-placeholder,
+textarea:-ms-input-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
+input:-moz-placeholder,
+textarea:-moz-placeholder {
+    color: #6c757d;
+    opacity: 1;
+}
+
 .card {
     margin-bottom: 20px;
+}
+
+/* Logo avec fond blanc rond */
+.logo-container {
+    background-color: white;
+    border-radius: 50%;
+    padding: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* Styles pour le switch de thème */

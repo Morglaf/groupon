@@ -2,6 +2,7 @@
 require_once 'includes/config.php';
 require_once 'includes/lang.php';
 require_once 'includes/auth.php';
+require_once 'includes/redirect_helper.php';
 require_once 'includes/header.php';
 $page_title = __('dashboard');
 
@@ -25,8 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
         
         // Rediriger pour éviter la resoumission du formulaire
-        header('Location: dashboard.php');
-        exit;
+        safeRedirect('dashboard.php', 'Commande supprimée avec succès. Redirection vers le tableau de bord...');
     }
 }
 
@@ -95,25 +95,12 @@ endif; ?>
     </div>
 </div>
 
+<?php if (!empty($commandes_admin)): ?>
 <div class="row mb-4">
-    <div class="col-md-12 d-flex justify-content-between align-items-center">
+    <div class="col-md-12">
         <h2><?php echo __('my_created_orders'); ?></h2>
-        <div>
-            <a href="/import_commande.php" class="btn btn-outline-primary me-2">
-                <i class="fas fa-file-import"></i> <?php echo __('import_order'); ?>
-            </a>
-            <a href="/create_commande.php" class="btn btn-primary">
-                <i class="fas fa-plus"></i> <?php echo __('create_order'); ?>
-            </a>
-        </div>
     </div>
 </div>
-
-<?php if (empty($commandes_admin)): ?>
-<div class="alert alert-info">
-    <?php echo __('no_orders_created'); ?> <a href="/create_commande.php"><?php echo __('create_one_now'); ?></a>.
-</div>
-<?php else: ?>
 <div class="row">
     <?php foreach ($commandes_admin as $commande): ?>
     <?php
@@ -152,7 +139,7 @@ endif; ?>
                     </a>
                     <button type="button" class="btn btn-outline-danger btn-sm" 
                             onclick="confirmDeleteCommande('<?php echo $commande['id']; ?>', '<?php echo htmlspecialchars($commande['titre']); ?>')">
-                        <i class="fas fa-trash"></i> <?php echo __('delete'); ?>
+                        <i class="fas fa-trash"></i> Supprimer
                     </button>
                 </div>
             </div>

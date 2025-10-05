@@ -1,13 +1,13 @@
 <?php
 require_once 'includes/config.php';
 require_once 'includes/lang.php';
+require_once 'includes/redirect_helper.php';
 require_once 'includes/header.php';
 $page_title = __('login');
 
 // Rediriger si déjà connecté
 if (isLoggedIn()) {
-    header('Location: dashboard.php');
-    exit;
+    safeRedirect('dashboard.php', 'Vous êtes déjà connecté. Redirection vers le tableau de bord...');
 }
 
 $errors = [];
@@ -39,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         $user_data = authenticateUser($email, $password);
         
+        // Debug temporaire
+        error_log("Authentication attempt for email: " . $email);
+        error_log("User data result: " . ($user_data ? "SUCCESS" : "FAILED"));
+        
         if ($user_data) {
             // Connexion réussie
             loginUser($user_data);
@@ -46,10 +50,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_message'] = __('login_success');
             $_SESSION['flash_type'] = 'success';
             
-            // Redirection
+            // Redirection vers le dashboard (accueil pour les connectés)
             $redirect = $_GET['redirect'] ?? 'dashboard.php';
-            header('Location: ' . $redirect);
-            exit;
+            
+            // S'assurer que la redirection est relative au domaine
+            if (!preg_match('/^https?:\/\//', $redirect)) {
+                $redirect = ltrim($redirect, '/');
+            }
+            
+            // Vérifier que la redirection est valide
+            if (empty($redirect) || $redirect === '/') {
+                $redirect = 'dashboard.php';
+            }
+            
+            // Redirection vers le dashboard (accueil pour les connectés)
+            safeRedirect($redirect, 'Connexion réussie ! Redirection vers le tableau de bord...');
         } else {
             $errors[] = __('wrong_credentials');
         }

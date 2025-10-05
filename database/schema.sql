@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `groupon_users` (
     `email` varchar(255) NOT NULL,
     `nom` varchar(100) NOT NULL,
     `prenom` varchar(100) NOT NULL,
+    `telephone` varchar(20) DEFAULT NULL,
     `password_hash` varchar(255) NOT NULL,
     `date_inscription` datetime NOT NULL,
     `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -27,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `groupon_commandes` (
     `titre` varchar(255) NOT NULL,
     `admin_id` varchar(32) NOT NULL,
     `description` text,
-    `type_commande` enum('poids','nombre','montant') NOT NULL,
+    `type_commande` enum('poids','nombre','montant','sans_frais') NOT NULL,
     `date_creation` datetime NOT NULL,
     `date_limite` datetime NOT NULL,
     `date_recuperation` datetime NOT NULL,
@@ -164,7 +165,7 @@ DELIMITER //
 -- Procédure pour calculer les frais de port
 CREATE PROCEDURE `groupon_calculer_frais_port`(
     IN p_commande_id VARCHAR(32),
-    IN p_type_commande ENUM('poids','nombre','montant'),
+    IN p_type_commande ENUM('poids','nombre','montant','sans_frais'),
     IN p_valeur DECIMAL(10,3)
 )
 BEGIN

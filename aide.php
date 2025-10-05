@@ -3,28 +3,18 @@ require_once 'includes/config.php';
 require_once 'includes/lang.php';
 require_once 'includes/auth.php';
 
-// Rediriger les utilisateurs connectés vers le dashboard
-if (isLoggedIn()) {
-    header('Location: dashboard.php');
-    exit;
-}
+// Rediriger les utilisateurs non connectés vers la page de connexion
+requireLogin('login.php');
 
 require_once 'includes/header.php';
-$page_title = __('home');
+$page_title = __('help');
 ?>
 
 <div class="jumbotron bg-light p-5 rounded mb-4">
-    <h1 class="display-4"><?php echo __('welcome'); ?> <?php echo htmlspecialchars(APP_NAME); ?> !</h1>
-    <p class="lead"><?php echo __('welcome_text'); ?></p>
+    <h1 class="display-4"><?php echo __('help'); ?> - <?php echo htmlspecialchars(APP_NAME); ?></h1>
+    <p class="lead"><?php echo __('help_description'); ?></p>
     <hr class="my-4">
-    <p>
-        <?php echo __('welcome_detail'); ?>
-        <?php echo __('please_login'); ?>
-    </p>
-    <div class="mt-4">
-        <a href="register.php" class="btn btn-primary btn-lg me-2"><?php echo __('register_now'); ?></a>
-        <a href="login.php" class="btn btn-secondary btn-lg"><?php echo __('login_now'); ?></a>
-    </div>
+    <p><?php echo __('help_welcome_message'); ?></p>
 </div>
 
 <div class="row mb-4">

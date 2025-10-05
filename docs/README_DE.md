@@ -1,4 +1,4 @@
-# Groupon - Gruppenbestellungs-Anwendung
+# Groupons - Gruppenbestellungs-Anwendung
 
 ## 📝 Inhaltsverzeichnis
 - [Überblick](#überblick)
@@ -11,7 +11,7 @@
 - [Mitwirkung](#mitwirkung)
 
 ## Überblick
-Dieses Projekt ist eine von Groupon inspirierte Plattform zur Verwaltung von Gruppenbestellungen, die es Benutzern ermöglicht, ihre Bestellungen zu erstellen, zu verwalten und zu verfolgen. Das System umfasst eine vollständige Administrationsoberfläche und unterstützt mehrere Sprachen.
+Dieses Projekt ist eine von Groupons inspirierte Plattform zur Verwaltung von Gruppenbestellungen, die es Benutzern ermöglicht, ihre Bestellungen zu erstellen, zu verwalten und zu verfolgen. Das System umfasst eine vollständige Administrationsoberfläche und unterstützt mehrere Sprachen.
 
 ## Funktionen
 - 🔐 Vollständiges Authentifizierungssystem (Anmeldung, Registrierung, Abmeldung)

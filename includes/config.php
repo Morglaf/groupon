@@ -4,10 +4,13 @@
  */
 
 // Nom de l'application
-define('APP_NAME', 'Groupon');
+define('APP_NAME', 'Groupons');
 
 // URL de base de l'application (sans slash final)
-define('APP_URL', 'http://localhost');
+// Détection automatique de l'URL basée sur le serveur
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+define('APP_URL', $protocol . '://' . $host);
 
 // Chemin vers le dossier de données (pour les exports uniquement)
 define('DATA_DIR', __DIR__ . '/../data');
@@ -48,7 +51,7 @@ define('SMTP_AUTH', false); // Authentification SMTP
 define('SMTP_USERNAME', ''); // Nom d'utilisateur SMTP
 define('SMTP_PASSWORD', ''); // Mot de passe SMTP
 define('SMTP_FROM_EMAIL', 'noreply@example.com'); // Email expéditeur
-define('SMTP_FROM_NAME', 'Groupon App'); // Nom expéditeur
+define('SMTP_FROM_NAME', 'Groupons App'); // Nom expéditeur
 
 // Email de l'expéditeur (pour compatibilité)
 define('EMAIL_FROM', SMTP_FROM_EMAIL);

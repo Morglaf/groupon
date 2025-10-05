@@ -1,6 +1,6 @@
 <?php
 require_once 'includes/config.php';
-require_once 'includes/functions.php';
+require_once 'includes/functions_mysql.php';
 
 // Vérifier si Turnstile est activé
 $turnstile_active = USE_TURNSTILE;

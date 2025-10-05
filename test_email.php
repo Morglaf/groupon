@@ -1,9 +1,9 @@
 <?php
 require_once 'includes/config.php';
-require_once 'includes/functions.php';
+require_once 'includes/functions_mysql.php';
 
 // Adresse email de test (remplacez par votre adresse)
-$test_email = 'votre-email@example.com';
+$test_email = 'testemail';
 
 // Envoi d'un email de test
 $subject = 'Test de configuration SMTP';

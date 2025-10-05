@@ -5,7 +5,7 @@
  */
 
 // Définir les constantes nécessaires pour l'installation
-define('APP_NAME', 'Groupon');
+define('APP_NAME', 'Groupons');
 
 // Vérifier si l'installation est déjà terminée
 if (file_exists('includes/database.php')) {
@@ -243,7 +243,7 @@ function createTables($pdo, $prefix) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Installation - <?php echo APP_NAME ?? 'Groupon'; ?></title>
+    <title>Installation - <?php echo APP_NAME ?? 'Groupons'; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -262,7 +262,7 @@ function createTables($pdo, $prefix) {
         <div class="install-container">
             <div class="install-card p-5">
                 <div class="text-center mb-4">
-                    <h1><i class="fas fa-shopping-cart text-primary"></i> <?php echo APP_NAME ?? 'Groupon'; ?></h1>
+                    <h1><i class="fas fa-shopping-cart text-primary"></i> <?php echo APP_NAME ?? 'Groupons'; ?></h1>
                     <p class="text-muted">Configuration de la base de données</p>
                 </div>
                 
@@ -278,7 +278,7 @@ function createTables($pdo, $prefix) {
                 <div class="text-center">
                     <h3>Bienvenue dans l'installation</h3>
                     <p class="text-muted mb-4">
-                        Cette installation va configurer votre base de données MySQL pour <?php echo APP_NAME ?? 'Groupon'; ?>.
+                        Cette installation va configurer votre base de données MySQL pour <?php echo APP_NAME ?? 'Groupons'; ?>.
                         Vous aurez besoin des informations de connexion à votre base de données.
                     </p>
                     

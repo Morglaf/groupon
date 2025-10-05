@@ -1,4 +1,4 @@
-# Groupon - Application de Commandes Groupées
+# Groupons - Application de Commandes Groupées
 
 <div align="center">
 
@@ -10,7 +10,10 @@
 
 ## 🚀 Application Web de Commandes Groupées
 
-**Groupon** est une application web moderne pour organiser des commandes groupées entre amis, collègues ou voisins. Optimisez vos frais de livraison en regroupant vos achats !
+# todo 
+- 
+
+**Groupons** est une application web moderne pour organiser des commandes groupées entre amis, collègues ou voisins. Optimisez vos frais de livraison en regroupant vos achats !
 
 ### ✨ Fonctionnalités Principales
 
@@ -39,10 +42,10 @@ L'application utilise **MySQL** comme base de données principale avec :
 
 ---
 
-Welcome to the Groupon group orders application documentation. Please select your preferred language above for complete documentation.
+Welcome to the Groupons group orders application documentation. Please select your preferred language above for complete documentation.
 
-Bienvenue dans la documentation de l'application Groupon. Veuillez sélectionner votre langue préférée ci-dessus pour accéder à la documentation complète.
+Bienvenue dans la documentation de l'application Groupons. Veuillez sélectionner votre langue préférée ci-dessus pour accéder à la documentation complète.
 
-Bienvenido a la documentación de la aplicación Groupon. Seleccione su idioma preferido arriba para acceder a la documentación completa.
+Bienvenido a la documentación de la aplicación Groupons. Seleccione su idioma preferido arriba para acceder a la documentación completa.
 
-Willkommen bei der Groupon-Anwendungsdokumentation. Bitte wählen Sie oben Ihre bevorzugte Sprache aus, um auf die vollständige Dokumentation zuzugreifen. 
+Willkommen bei der Groupons-Anwendungsdokumentation. Bitte wählen Sie oben Ihre bevorzugte Sprache aus, um auf die vollständige Dokumentation zuzugreifen. 

@@ -3,6 +3,12 @@
  * Configuration TCPDF pour l'export PDF
  */
 
+// Éviter l'inclusion multiple
+if (defined('TCPDF_CONFIG_LOADED')) {
+    return;
+}
+define('TCPDF_CONFIG_LOADED', true);
+
 // Vérifier si TCPDF est disponible
 if (!class_exists('TCPDF')) {
     // Charger TCPDF depuis le dossier vendor local

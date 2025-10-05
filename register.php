@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'nom' => trim($_POST['nom'] ?? ''),
         'prenom' => trim($_POST['prenom'] ?? ''),
         'email' => trim($_POST['email'] ?? ''),
+        'telephone' => trim($_POST['telephone'] ?? ''),
     ];
     
     $password = $_POST['password'] ?? '';
@@ -74,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Créer l'utilisateur si pas d'erreurs
     if (empty($errors)) {
-        $user_id = createUser($form_data['prenom'], $form_data['nom'], $form_data['email'], $password);
+        $user_id = createUser($form_data['prenom'], $form_data['nom'], $form_data['email'], $password, $form_data['telephone']);
         
         if ($user_id) {
             // Connexion automatique
@@ -126,6 +127,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="mb-3">
                         <label for="email" class="form-label"><?php echo __('email'); ?></label>
                         <input type="email" class="form-control" id="email" name="email" value="<?php echo htmlspecialchars($form_data['email']); ?>" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="telephone" class="form-label"><?php echo __('phone'); ?> <small class="text-muted">(<?php echo __('optional'); ?>)</small></label>
+                        <input type="tel" class="form-control" id="telephone" name="telephone" value="<?php echo htmlspecialchars($form_data['telephone']); ?>" placeholder="<?php echo __('phone_placeholder'); ?>">
+                        <div class="form-text"><?php echo __('phone_help'); ?></div>
                     </div>
                     
                     <div class="mb-3">

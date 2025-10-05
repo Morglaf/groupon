@@ -1,4 +1,4 @@
-# Groupon - Aplicación de Pedidos Grupales
+# Groupons - Aplicación de Pedidos Grupales
 
 ## 📝 Tabla de Contenidos
 - [Visión general](#visión-general)
@@ -11,7 +11,7 @@
 - [Contribución](#contribución)
 
 ## Visión general
-Este proyecto es una plataforma de gestión de pedidos grupales inspirada en Groupon, que permite a los usuarios crear, gestionar y seguir sus pedidos. El sistema incluye una interfaz de administración completa y es compatible con varios idiomas.
+Este proyecto es una plataforma de gestión de pedidos grupales inspirada en Groupons, que permite a los usuarios crear, gestionar y seguir sus pedidos. El sistema incluye una interfaz de administración completa y es compatible con varios idiomas.
 
 ## Características
 - 🔐 Sistema de autenticación completo (inicio de sesión, registro, cierre de sesión)
